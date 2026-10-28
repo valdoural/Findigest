@@ -301,7 +301,7 @@
     sec('mail').innerHTML = `<div class="cn-card">
       <div class="cn-head">${sw('mail-on', m.enabled, 'Использовать почту')}<span class="cn-logo" style="background:#168DE2">@</span>
         <b>Почта с чеками <small>${m.user ? esc(m.user) : 'не настроена'}${m.hasPassword ? ' · пароль сохранён' : ''}</small></b></div>
-      <p class="nt" style="margin:8px 0 0">Магазины присылают электронные чеки на почту. Приложение будет находить такие письма по адресам отправителей и передавать чеки в разбор ИИ.</p>
+      <p class="nt" style="margin:8px 0 0">Магазины присылают электронные чеки на почту. Программа сама находит такие письма по адресам отправителей, разбирает чеки и добавляет покупки в «Продукты» — нажимать ничего не нужно.</p>
       <div class="cn-row"><label>Почтовый сервис<select id="mail-prov">${Object.entries(m.presets).map(([k, v]) => `<option value="${k}" ${k === m.provider ? 'selected' : ''}>${esc(v.title)}</option>`).join('')}</select></label></div>
       <div class="cn-row" ${m.provider === 'custom' ? '' : 'style="display:none"'}><label>Сервер IMAP<input id="mail-host" value="${esc(m.host)}"></label><label style="flex:0 1 110px">Порт<input id="mail-port" type="number" value="${esc(m.port)}"></label></div>
       <div class="cn-row"><label>Адрес почты<input id="mail-user" type="email" value="${esc(m.user)}" placeholder="name@mail.ru"></label></div>
@@ -311,13 +311,19 @@
       <div id="mail-snd">${snd.map(([k, v]) => sndRow(k, v)).join('')}</div>
       <button class="bn gh" type="button" id="mail-add" style="min-height:38px;margin-top:4px">+ Магазин</button>
       <p class="nt" style="margin:6px 0 0">Можно указать часть адреса: «ofd» найдёт чеки любого оператора фискальных данных.</p>
-      <h3>Как загружать</h3>
+      <h3>Как поступают чеки</h3>
+      <ol class="cn-flow">
+        <li><b>Письмо пришло</b><span>программа проверяет почту при запуске, ${+m.pollMinutes ? 'каждые ' + (+m.pollMinutes === 60 ? 'час' : m.pollMinutes + ' мин') : 'по расписанию обновления'} и по кнопке «Обновить» в шапке</span></li>
+        <li><b>Чек в архиве</b><span>оригинал сохраняется в базе — «Продукты → Архив чеков»</span></li>
+        <li><b>Покупки в отчёте</b><span>${m.autoParse ? 'чек сразу разбирается: текстовые — сами, фото и PDF-сканы — ИИ' : 'разбор — по кнопке в подсказке (автоматический разбор выключен)'}; появляется подсказка «Новый чек: магазин · сумма»</span></li>
+      </ol>
+      <div class="cn-row"><label>Проверять почту<select id="mail-poll">${[[15, 'каждые 15 минут'], [30, 'каждые 30 минут'], [60, 'каждый час'], [0, 'только при обновлении данных']].map(([v, t]) => `<option value="${v}" ${+(m.pollMinutes ?? 30) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label>Новый магазин — искать письма за<select id="mail-depth">${[30, 90, 180, 365].map(d => `<option value="${d}" ${+m.depthDays === d ? 'selected' : ''}>${d} дней</option>`).join('')}</select></label></div>
       <div class="cn-row" style="flex-direction:column;align-items:flex-start;gap:2px">
-        <label class="cn-prim"><input type="checkbox" role="switch" id="mail-subj" ${m.subjectSearch ? 'checked' : ''}>Искать и по теме письма («кассовый чек», «электронный чек»)</label>
-        <label class="cn-prim"><input type="checkbox" role="switch" id="mail-auto" ${m.autoParse ? 'checked' : ''}>Сразу разбирать новые чеки ИИ</label></div>
-      <div class="cn-row"><label>При первой проверке брать письма за<select id="mail-depth">${[30, 90, 180, 365].map(d => `<option value="${d}" ${+m.depthDays === d ? 'selected' : ''}>${d} дней</option>`).join('')}</select></label></div>
+        <label class="cn-prim"><input type="checkbox" role="switch" id="mail-auto" ${m.autoParse ? 'checked' : ''}>Сразу разбирать новые чеки и добавлять покупки в «Продукты»</label>
+        <label class="cn-prim"><input type="checkbox" role="switch" id="mail-subj" ${m.subjectSearch ? 'checked' : ''}>Искать и по теме письма («кассовый чек», «электронный чек»)</label></div>
       ${m.lastCheck ? `<div class="cn-kv"><span>Последняя проверка</span><span>${esc(new Date(m.lastCheck).toLocaleString('ru-RU'))}</span>${m.lastResult ? `<span>Результат</span><span>новых писем ${m.lastResult.checked}, чеков ${m.lastResult.receipts}${m.lastResult.skipped ? ', без чека ' + m.lastResult.skipped : ''}${m.lastResult.errors ? ', ошибок ' + m.lastResult.errors : ''}</span>` : ''}</div>` : ''}
-      <div class="cn-row"><button class="bn" type="button" id="mail-save">Сохранить и проверить</button>${m.user && m.hasPassword ? '<button class="bn gh" type="button" id="mail-fetch">Загрузить чеки сейчас</button>' : ''}</div>
+      <div class="cn-row"><button class="bn" type="button" id="mail-save">Сохранить и проверить почту</button></div>
       <p class="cn-msg" id="mail-msg"></p></div>`;
     const el = sec('mail');
     el.onclick = async e => {
@@ -330,28 +336,35 @@
         el.querySelectorAll('.cn-snd').forEach(r => { const [a, c] = r.querySelectorAll('input'); if (a.value.trim() && c.value.trim()) senders[a.value.trim()] = c.value.trim(); });
         const prov = $('mail-prov').value, pset = S.mail.presets[prov];
         const patch = { provider: prov, user: $('mail-user').value.trim(), senders, enabled: true,
-          subjectSearch: $('mail-subj').checked, autoParse: $('mail-auto').checked, depthDays: +$('mail-depth').value,
+          subjectSearch: $('mail-subj').checked, autoParse: $('mail-auto').checked, depthDays: +$('mail-depth').value, pollMinutes: +$('mail-poll').value,
           host: prov === 'custom' ? $('mail-host').value.trim() : pset.host, port: prov === 'custom' ? +$('mail-port').value || 993 : pset.port };
         S = await N.conn.setMail(patch);
         const p = $('mail-pass').value; if (p) S = await N.conn.setSecret('mail_password', p);
         const mm = $('mail-msg');
-        await act(mm, () => N.conn.test('mail'), x => `Подключено. Писем в папке: ${x.total}; чеков от указанных магазинов за 90 дней: ${x.receipts90d}.`);
-        const t = mm.textContent, c = mm.className; S = await N.conn.status(); renderMail(); paintStatus(); $('mail-msg').textContent = t; $('mail-msg').className = c;
-      }
-      if (b.id === 'mail-fetch') {
-        const mm = $('mail-msg');
-        msg(mm, 'Ищу письма с чеками… Первая проверка может занять пару минут.');
+        // одна кнопка на весь путь: вход → новые чеки в архив → разбор → покупки в «Продукты»
+        const t0 = await act(mm, () => N.conn.test('mail'), x => `Подключено. Чеков от ваших магазинов за 90 дней: ${x.receipts90d}. Загружаю новые…`);
+        if (!t0) return;
+        let line = mm.textContent.replace(' Загружаю новые…', '');
         try {
           const st = await N.digest.refresh({ only: 'mail' });
-          const r = (st.mail && st.mail.lastResult) || {};
-          if (st.mail.pending && st.mail.autoParse) sessionStorage.setItem('fd_autoparse', '1');
-          msg(mm, `Готово: новых писем ${r.checked || 0}, чеков загружено ${r.receipts || 0}.` + (r.receipts ? ' Перезагружаю отчёт…' : ''), 'ok');
-          if (r.receipts) setTimeout(() => location.reload(), 1200);
-        } catch (x) { msg(mm, 'Ошибка: ' + errText(x), 'err'); }
+          const lr = st.lastRun || {}, ids = (lr.mail && lr.mail.ids) || [];
+          const err = (lr.errors || []).find(x => x.source === 'mail');
+          if (err) throw Object.assign(new Error(err.message), { code: err.code });
+          if (!ids.length) line += ' Новых нет — все уже в архиве.';
+          else {
+            msg(mm, line + ` Новых: ${ids.length}, разбираю…`);
+            const list = window.FD_mailIngest ? await window.FD_mailIngest(ids, { quietIfNone: true }) : [];
+            const ok = list.filter(x => x.status === 'parsed');
+            line += ` Новых: ${ids.length}` + (ok.length ? `, в «Продукты» добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store || 'магазин'))].join(', ')}).` : '. Они в архиве чеков — разбор фото и сканов требует ИИ.');
+          }
+          S = await N.conn.status(); renderMail(); paintStatus(); msg($('mail-msg'), line, 'ok');
+        } catch (x) { S = await N.conn.status(); renderMail(); paintStatus(); msg($('mail-msg'), line + ' Загрузка не удалась: ' + errText(x), 'err'); }
       }
     };
     el.onchange = async e => {
       if (e.target.id === 'mail-on') { S = await N.conn.setMail({ enabled: e.target.checked }); paintStatus(); }
+      if (e.target.id === 'mail-poll') { S = await N.conn.setMail({ pollMinutes: +e.target.value }); }
+      if (e.target.id === 'mail-auto') { S = await N.conn.setMail({ autoParse: e.target.checked }); }
       if (e.target.id === 'mail-prov') { const v = e.target.value, p = S.mail.presets[v]; S = await N.conn.setMail({ provider: v, host: p.host || S.mail.host, port: p.port }); renderMail(); }
     };
   }

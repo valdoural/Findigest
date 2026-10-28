@@ -44,7 +44,7 @@ app.whenReady().then(async () => {
     const U = require('../src/main/updates');
 
     ok(U.cmp('1.0.0', '0.9.9') > 0 && U.cmp('1.0.0-beta.1', '1.0.0') < 0 && U.cmp('v0.9.1', '0.9.1') === 0, 'сравнение версий (в т.ч. pre-release и префикс v)');
-    let st = U.status(); ok(!st.configured, 'без репозитория обновления не проверяются');
+    let st = U.status(); const PKGR = require('../package.json').fdRelease || {}; ok(st.configured && st.owner === PKGR.owner && st.repo === PKGR.repo, `из коробки — репозиторий из package.json: ${st.owner}/${st.repo}`);
     st = U.set({ owner: 'https://github.com/o/r' }); ok(st.owner === 'o' && st.repo === 'r', 'ссылка на репозиторий разбирается в владельца и название');
     st = await U.check();
     ok(st.newer && st.latest.version === NEXT && st.releases.length === 2, `есть новая версия ${NEXT} (черновики и pre-release не предлагаются), всего ${st.releases.length}`);

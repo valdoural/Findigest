@@ -13,7 +13,7 @@ const settings = require('./config/settings');
 const service = require('./digest/service');
 const log = require('./log');
 
-let timer = null;
+let timer = null, mailTimer = null, mailLast = 0;
 
 function sched() { return settings.get().schedule; }
 /** Время прошлого запуска по расписанию (успешного или нет — чтобы при ошибке не повторять каждые 30 секунд). */
@@ -58,13 +58,24 @@ async function run(reason) {
   catch (e) { log.warn('Обновление по расписанию не удалось:', e.message); }
 }
 
-function tick() { if (sched().mode !== 'off' && missed()) run('schedule'); }
+function tick() { if (sched().mode !== 'off' && missed()) run('schedule'); mailTick(); }
+
+/** Почта — чаще общего расписания: новые чеки попадают в отчёт в течение pollMinutes после прихода письма. */
+async function mailTick() {
+  const every = +settings.get().mail.pollMinutes || 0;
+  if (!every || Date.now() - mailLast < every * 60e3) return;
+  const st = service.status();
+  if (!st.mail || !st.mail.connected || st.running) return;
+  mailLast = Date.now();
+  try { await service.refresh({ only: 'mail', reason: 'mail-poll' }); }
+  catch (e) { log.warn('Проверка почты не удалась:', e.message); }
+}
 
 function start() {
   stop();
   timer = setInterval(tick, 30e3);
   powerMonitor.on('resume', () => setTimeout(tick, 15e3));
-  if (sched().onStart) setTimeout(() => run('start'), 5e3);
+  if (sched().onStart) { mailLast = Date.now(); setTimeout(() => run('start'), 5e3); }
 }
 function stop() { if (timer) clearInterval(timer); timer = null; }
 

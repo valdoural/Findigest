@@ -117,3 +117,11 @@
 .ab-how summary{cursor:pointer;list-style-position:inside}
 .ab-how ol{padding-left:18px;margin:8px 0}
 .ab-how code{font-size:.8rem;padding:1px 5px;border-radius:6px;background:var(--s2)}
+
+/* «Почта → Как поступают чеки»: путь чека в три шага */
+.cn-flow{list-style:none;counter-reset:fl;margin:8px 0 10px;padding:0;display:grid;gap:8px}
+.cn-flow li{counter-increment:fl;display:grid;grid-template-columns:28px 1fr;gap:2px 10px;align-items:start}
+.cn-flow li::before{content:counter(fl);grid-row:span 2;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.8rem;
+  color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent)}
+.cn-flow b{font-size:.9rem}
+.cn-flow span{color:var(--mu);font-size:.82rem;line-height:1.4}

@@ -88,7 +88,8 @@ function fetchReceipts({ render } = {}) {
     const m = settings.get().mail;
     const started = new Date().toISOString();
     const last = m.lastCheck ? new Date(m.lastCheck) : null;
-    const since = last ? new Date(last.getTime() - 3 * 864e5) : new Date(Date.now() - (+m.depthDays || 90) * 864e5);
+    // обычно — с прошлой проверки (с запасом 3 дня); впервые и после добавления магазина — на всю глубину
+    const since = last && !m.rescan ? new Date(last.getTime() - 3 * 864e5) : new Date(Date.now() - (+m.depthDays || 90) * 864e5);
     const res = { checked: 0, imported: 0, receipts: 0, skipped: 0, errors: 0, ids: [] };
     const c = client();
     try {
@@ -122,7 +123,7 @@ function fetchReceipts({ render } = {}) {
           }
         }
       } finally { lock.release(); }
-      settings.patch('mail', { lastCheck: new Date().toISOString(), lastResult: { at: new Date().toISOString(), ...res, ids: undefined } });
+      settings.patch('mail', { lastCheck: new Date().toISOString(), rescan: false, lastResult: { at: new Date().toISOString(), ...res, ids: undefined } });
       D.db.prepare('INSERT INTO sync_log(source,started,finished,status,message) VALUES(?,?,?,?,?)')
         .run('mail', started, new Date().toISOString(), 'ok', `писем ${res.checked}, чеков ${res.receipts}, без чека ${res.skipped}, ошибок ${res.errors}`);
       log.info(`Почта: новых писем ${res.checked}, чеков загружено ${res.receipts}`);

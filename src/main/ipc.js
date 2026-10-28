@@ -94,8 +94,15 @@ function registerConnections() {
     return connStatus();
   });
   handle('conn:setMail', patch => {
-    const allowed = ['enabled', 'provider', 'host', 'port', 'user', 'folder', 'senders', 'subjectSearch', 'depthDays', 'autoParse'];
+    const allowed = ['enabled', 'provider', 'host', 'port', 'user', 'folder', 'senders', 'subjectSearch', 'depthDays', 'autoParse', 'pollMinutes'];
     const clean = Object.fromEntries(Object.entries(patch || {}).filter(([k]) => allowed.includes(k)));
+    if (clean.pollMinutes != null) clean.pollMinutes = [0, 15, 30, 60].includes(+clean.pollMinutes) ? +clean.pollMinutes : 30;
+    // новый магазин или адрес: следующая проверка заглянет на всю глубину (depthDays) — его старые чеки тоже найдутся;
+    // уже обработанные письма пропускаются по таблице mail_seen, дублей не будет
+    if (clean.senders) {
+      const old = new Set(Object.values(settings.get().mail.senders || {}).map(a => String(a).trim().toLowerCase()));
+      if (Object.values(clean.senders).some(a => a && !old.has(String(a).trim().toLowerCase()))) clean.rescan = true;
+    }
     settings.patch('mail', clean);
     return connStatus();
   });

@@ -76,8 +76,10 @@ async function refresh({ full = false, reason = 'manual', only = null } = {}) {
   state = { running: false, lastError: out.errors[0] ? { ...out.errors[0], at: out.at } : null, lastRun: { ...out, ...(out.zen || {}) } };
   emit();
   if (!failedAll) {
-    const info = { reason, changed: out.zen ? out.zen.changed : 0, deleted: out.zen ? out.zen.deleted : 0, mailReceipts: out.mail ? out.mail.receipts : 0, errors: out.errors };
-    for (const w of BrowserWindow.getAllWindows()) w.webContents.send('digest:updated', info);
+    const info = { reason, changed: out.zen ? out.zen.changed : 0, deleted: out.zen ? out.zen.deleted : 0, mailReceipts: out.mail ? out.mail.receipts : 0, mailIds: out.mail ? out.mail.ids || [] : [], errors: out.errors };
+    // частая фоновая проверка почты без новых чеков — окну не сообщаем, чтобы не отвлекать
+    const quiet = reason === 'mail-poll' && !info.mailReceipts && !out.errors.length;
+    if (!quiet) for (const w of BrowserWindow.getAllWindows()) w.webContents.send('digest:updated', info);
     if (out.zen || (out.mail && out.mail.receipts)) require('../insights/insights').maybeAuto('refresh'); // выводы ИИ — если данные изменились
   }
   if (failedAll) { const e = out.errors[0]; throw Object.assign(new Error(e.message), { code: e.code }); }

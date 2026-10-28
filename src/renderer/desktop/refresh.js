@@ -66,6 +66,10 @@
     say('Проверяю ' + ([st && st.connected && 'Zenmoney', st && st.mail && st.mail.connected && 'почту'].filter(Boolean).join(' и ') || 'данные') + '…', { sticky: true });
     try {
       const after = await N.digest.refresh();
+      const lr = after.lastRun || {}, zc = (lr.changed || 0) + (lr.deleted || 0);
+      const errs0 = lr.errors || [];
+      // изменились только чеки в почте — разбираем на месте, без перезагрузки
+      if (!zc && !errs0.length) { manual = false; refreshStatus(); const ids = (lr.mail && lr.mail.ids) || []; if (ids.length) return ingestMail(ids); return say('Данные проверены — нового нет.'); }
       if (after.mail && after.mail.pending && after.mail.autoParse) sessionStorage.setItem('fd_autoparse', '1');
       const errs = (after.lastRun && after.lastRun.errors) || [];
       if (errs.length) sessionStorage.setItem('fd_toast', 'Не всё обновилось: ' + errs.map(e => (e.source === 'mail' ? 'почта' : 'Zenmoney') + ' — ' + e.message).join('; '));
@@ -78,31 +82,85 @@
   });
 
   N.digest.onState(st => { N.digest.status().then(paint).catch(() => paint(st)); });
+  /* ---------- новые чеки из почты: загрузка → разбор → база → подсказка, без перезагрузки и без кнопок ---------- */
+  const rub = v => Math.round(v).toLocaleString('ru-RU') + ' ₽';
+  const dm = d => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d.slice(8, 10) + '.' + d.slice(5, 7) : '');
+  function showReceipts(ids) {
+    const t = document.querySelector('.tabs [data-s="sheet6"]'); if (t) t.click();
+    setTimeout(() => {
+      const box = document.getElementById('rcaBody'); if (box && box.hidden) { const b = document.getElementById('rcaT'); if (b) b.click(); }
+      const first = ids && ids[0] && document.querySelector(`#rca [data-sel="${ids[0]}"]`);
+      const row = first ? first.closest('details') : document.getElementById('rca');
+      if (row) { if (row.tagName === 'DETAILS') row.open = true; row.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    }, 250);
+  }
+  /** Разобрать загруженные из почты чеки (ids — только эти) и сообщить, что добавлено. Возвращает список.
+   *  Вызовы идут по очереди: «Сохранить и проверить» и событие обновления не делят чеки между собой. */
+  let chain = Promise.resolve();
+  const results = new Map();
+  function ingestMail(ids, opts) {
+    const run = chain.then(() => ingestNow(ids, opts || {}));
+    chain = run.catch(() => {});
+    return run.then(list => (ids && ids.length ? ids.map(id => results.get(id)).filter(Boolean) : list));
+  }
+  async function ingestNow(ids, { quietIfNone } = {}) {
+    // отчёт строится асинхронно: при запуске ждём, пока он опубликует FD_PAGE (до 30 с)
+    for (let i = 0; i < 120 && !(window.FD_PAGE && window.FD_PAGE.ingestMail); i++) await new Promise(r => setTimeout(r, 250));
+    const P = window.FD_PAGE; if (!P || !P.ingestMail) return [];
+    const st = await N.digest.status().catch(() => ({}));
+    const auto = !!(st.mail && st.mail.autoParse);
+    const list = await P.ingestMail(ids, { noParse: !auto });
+    for (const x of list) results.set(x.id, x);
+    // фоновый разбор: итог — в подсказке, панель хода разбора не нужна (иначе они перекрываются внизу экрана)
+    if (list.length) { const j = document.getElementById('job'); if (j && j.classList.contains('done')) j.hidden = true; }
+    if (!list.length) { if (!quietIfNone) say('Новых чеков в почте нет.'); return list; }
+    const ok = list.filter(x => x.status === 'parsed'), bad = list.filter(x => x.status === 'error'), wait = list.filter(x => x.status !== 'parsed' && x.status !== 'error');
+    const sum = ok.reduce((a, x) => a + (+x.total || 0), 0);
+    let text;
+    if (ok.length === 1) { const x = ok[0]; text = `Новый чек из почты: ${x.store || 'магазин'}${dm(x.date) ? ' · ' + dm(x.date) : ''}${x.total ? ' · ' + rub(x.total) : ''} — ${x.items} поз. добавлено в «Продукты»`; }
+    else if (ok.length) text = `Из почты добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store).filter(Boolean))].slice(0, 3).join(', ') || 'магазины'})${sum ? ' на ' + rub(sum) : ''} — в «Продукты»`;
+    if (bad.length) text = (text ? text + '. ' : '') + `Не разобрано: ${bad.length} — ${bad[0].err || 'проверьте в архиве'}`;
+    if (wait.length) text = (text ? text + '. ' : '') + `В архиве ждут разбора: ${wait.length}`;
+    say(text + '.', { sticky: true, err: !!bad.length && !ok.length, action: { label: wait.length && !auto ? 'Разобрать' : 'Показать', run: async () => { toast.hidden = true; if (wait.length && !auto) { await window.FD_PAGE.ingestMail(wait.map(x => x.id)); } showReceipts(list.map(x => x.id)); } } });
+    return list;
+  }
+  window.FD_mailIngest = ingestMail;   // «Сохранить и проверить» в «Подключениях → Почта»
+
   N.digest.onUpdated(async info => {
     if (manual) return;
     const n = (info.changed || 0) + (info.deleted || 0), r = info.mailReceipts || 0;
     const st = await N.digest.status().catch(() => ({}));
     const auto = r && st.mail && st.mail.autoParse;
-    // окно свёрнуто в трей: обновляем отчёт и разбираем чеки сразу, никого не отвлекая
-    if (document.hidden && (n || r)) { if (auto) sessionStorage.setItem('fd_autoparse', '1'); location.reload(); return; }
-    const bits = [n ? `Zenmoney: изменений ${n}` : '', r ? `из почты загружено чеков: ${r}` : ''].filter(Boolean);
-    if (!bits.length) return say('Данные проверены — нового нет.');
-    say('Обновлено. ' + bits.join('; ') + '.', { sticky: true, action: { label: auto ? 'Показать и разобрать' : 'Показать', run: () => { if (auto) sessionStorage.setItem('fd_autoparse', '1'); location.reload(); } } });
+    // изменились данные Zenmoney — отчёт пересчитан, нужна перезагрузка (чеки разберутся после неё)
+    if (n) {
+      if (document.hidden) { if (auto) sessionStorage.setItem('fd_autoparse', '1'); location.reload(); return; }
+      const bits = [`Zenmoney: изменений ${n}`, r ? `из почты загружено чеков: ${r}` : ''].filter(Boolean);
+      return say('Обновлено. ' + bits.join('; ') + '.', { sticky: true, action: { label: 'Показать', run: () => { if (r) sessionStorage.setItem('fd_autoparse', '1'); location.reload(); } } });
+    }
+    // только почта — разбираем на месте, отчёт не перезагружается
+    if (r) return ingestMail(info.mailIds, { quietIfNone: true });
+    if (info.reason !== 'mail-poll' && !(info.errors || []).length) say('Данные проверены — нового нет.');
   });
 
-  /* после перезагрузки: сообщения и автоматический разбор новых чеков из почты */
+  /* после перезагрузки и при запуске: сообщения и разбор чеков, которые ждут в архиве */
   (async () => {
     const t = sessionStorage.getItem('fd_toast');
     if (t) { sessionStorage.removeItem('fd_toast'); say(t, { err: true, sticky: true }); }
     const st = await N.digest.status().catch(() => null);
-    if (!st || !st.mail) return;
-    const flag = sessionStorage.getItem('fd_autoparse');
     sessionStorage.removeItem('fd_autoparse');
-    if (!st.mail.pending) return;
-    if (!flag) {
-      return say(`В архиве неразобранных чеков из почты: ${st.mail.pending}.`, { sticky: true, action: { label: 'Разобрать', run: () => { toast.hidden = true; startParse(); } } });
-    }
-    startParse();
+    // один раз: перепроверить разобранные чеки, где сумма позиций больше итога (старая ошибка чтения копеек)
+    try {
+      let done = false; try { done = localStorage.getItem('fd_kopfix') === '1'; } catch (_) { /* нет хранилища */ }
+      if (!done) {
+        for (let i = 0; i < 120 && !(window.FD_PAGE && window.FD_PAGE.recheckParsed); i++) await new Promise(r => setTimeout(r, 250));
+        const n = window.FD_PAGE && window.FD_PAGE.recheckParsed ? await window.FD_PAGE.recheckParsed() : 0;
+        try { localStorage.setItem('fd_kopfix', '1'); } catch (_) { /* нет хранилища */ }
+        if (n) say(`Исправлены суммы в чеках: ${n} — копейки раньше читались как тысячи.`, { sticky: true, action: { label: 'Показать', run: () => { toast.hidden = true; showReceipts([]); } } });
+      }
+    } catch (_) { /* проверка необязательна */ }
+    if (!st || !st.mail || !st.mail.pending) return;
+    if (st.mail.autoParse) return ingestMail(null, { quietIfNone: true });
+    return say(`В архиве неразобранных чеков из почты: ${st.mail.pending}.`, { sticky: true, action: { label: 'Разобрать', run: () => { toast.hidden = true; startParse(); } } });
   })();
   async function startParse() {
     // кнопка «Разобрать» на листе «Продукты» доступна, когда отчёт загрузил архив и проверил доступ к ИИ
