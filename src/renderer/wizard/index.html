@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Первая настройка — Финансовый дайджест</title>
+<link rel="stylesheet" href="../digest/vendor/fonts.css">
+<link rel="stylesheet" href="../desktop/controls.css">
+<style>
+:root{--bg:#EDF0F7;--gl:rgba(255,255,255,.66);--gb:rgba(255,255,255,.8);--s2:rgba(15,23,42,.07);--tx:#0F172A;--mu:#55607A;--bd:rgba(15,23,42,.11);--ac:#3B5BDB;--on:#fff;--pos:#1E7F57;--neg:#B8483F;--sh:0 8px 28px rgba(30,45,90,.10);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0A0F1E;--gl:rgba(24,33,56,.58);--gb:rgba(255,255,255,.10);--s2:rgba(255,255,255,.08);--tx:#E8ECF5;--mu:#9AA6BF;--bd:rgba(255,255,255,.12);--ac:#8FA8FF;--on:#0B1226;--pos:#6CCFA2;--neg:#EE8B83;--sh:0 8px 28px rgba(0,0,0,.4);color-scheme:dark}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font:15px/1.55 Manrope,system-ui,"Segoe UI",sans-serif}
+body::after{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(620px 420px at 8% -5%,color-mix(in srgb,var(--ac) 24%,transparent),transparent),radial-gradient(520px 420px at 100% 35%,color-mix(in srgb,var(--pos) 13%,transparent),transparent)}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 20px;display:grid;grid-template-columns:260px 1fr;gap:20px;min-height:100vh;align-content:start}
+@media(max-width:820px){.wrap{grid-template-columns:1fr;padding:16px}.steps{display:flex;overflow-x:auto;gap:6px;scrollbar-width:thin}.steps li{flex:none}.steps li span.d{display:none}}
+.wrap>*,.grid2>*{min-width:0}
+@media(max-width:520px){.c{padding:16px;border-radius:18px}h1{font-size:1.2rem}.nav{flex-wrap:wrap}.nav>span{display:flex;gap:8px;margin-left:auto}.brand{margin-bottom:10px}}
+.c{background:var(--gl);border:1px solid var(--gb);border-radius:22px;padding:22px;box-shadow:var(--sh);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.brand{display:flex;align-items:center;gap:10px;font:700 1rem Unbounded,Manrope,sans-serif;letter-spacing:-.02em;margin-bottom:18px}
+.steps{list-style:none;margin:0;padding:0}
+.steps li{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;color:var(--mu);font-weight:600;font-size:.9rem}
+.steps li b{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--bd);font:700 .78rem Manrope;flex:none;transition:background-color .2s,border-color .2s,color .2s}
+.steps li.on{background:var(--s2);color:var(--tx)}.steps li.on b{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.steps li.done b{background:var(--pos);border-color:var(--pos);color:#fff}
+.steps li span.d{display:block;font-weight:400;font-size:.74rem}
+h1{font:700 1.4rem Unbounded,Manrope,sans-serif;letter-spacing:-.03em;margin:0 0 6px}
+h3{font:700 .92rem Manrope;margin:18px 0 6px}
+.lead{color:var(--mu);margin:0 0 16px}
+.nt{color:var(--mu);font-size:.84rem}
+.pane{display:none;animation:in .35s cubic-bezier(.2,.7,.2,1)}.pane.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.how{counter-reset:s;list-style:none;margin:0;padding:0}
+.how li{counter-increment:s;position:relative;padding:0 0 12px 40px;font-size:.88rem}
+.how li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--ac);color:var(--on);display:grid;place-items:center;font:700 .8rem Manrope}
+.how li small{display:block;color:var(--mu)}
+.ill{border:1px solid var(--bd);border-radius:16px;overflow:hidden;background:color-mix(in srgb,var(--bg) 70%,transparent)}
+.ill svg{display:block;width:100%;height:auto}
+.ill figcaption{padding:8px 12px;font-size:.76rem;color:var(--mu);border-top:1px solid var(--bd)}
+.prov{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 14px}@media(max-width:620px){.prov{grid-template-columns:1fr}}
+.prov button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px;border:1.5px solid var(--bd);border-radius:16px;background:var(--gl);color:var(--tx);font:inherit;text-align:left;cursor:pointer;transition:border-color .2s,transform .2s}
+.prov button:hover{transform:translateY(-1px)}
+.prov button[aria-pressed="true"]{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 22%,transparent)}
+.prov .lg{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:#fff;font:700 .78rem Unbounded,Manrope}
+.prov small{color:var(--mu);font-size:.74rem}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--mu);margin:10px 0}
+input,select{min-height:46px;padding:0 12px;border:1px solid var(--bd);border-radius:12px;background:var(--gl);color:var(--tx);font:inherit;width:100%}
+input.k{font-family:"IBM Plex Mono",monospace;font-size:.85rem}
+input:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.bn{min-height:46px;padding:0 18px;border:0;border-radius:12px;background:var(--tx);color:var(--bg);font:700 .88rem Manrope;cursor:pointer;transition:opacity .2s}.bn:hover{opacity:.86}.bn:disabled{opacity:.4;cursor:default}
+.bn.gh{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.lk{background:none;border:0;padding:8px 4px;margin:-8px -4px;text-align:left;color:var(--ac);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid var(--bd)}
+.msg{min-height:1.4em;font-size:.84rem;margin:8px 0 0}.msg.ok{color:var(--pos)}.msg.err{color:var(--neg)}
+.chk{list-style:none;margin:0;padding:0}.chk li{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.9rem}.chk li:last-child{border:0}
+.chk i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:.8rem;flex:none;background:var(--s2);color:var(--mu)}
+.chk i.ok{background:var(--pos);color:#fff}.chk i.sk{background:var(--s2)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.84rem}.kv span:nth-child(odd){color:var(--mu)}.kv code{font:500 .78rem "IBM Plex Mono",monospace;word-break:break-all}
+.pulse{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pos);box-shadow:0 0 0 0 color-mix(in srgb,var(--pos) 50%,transparent);animation:p 1.6s infinite;margin-right:8px;vertical-align:middle}
+@keyframes p{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.imp{margin:14px 0;padding:14px;border:1px dashed var(--bd);border-radius:16px}
+.opt{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--s2);color:var(--mu);margin-left:8px;vertical-align:middle;font-family:Manrope}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="c">
+    <div class="brand"><svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4B6BF0"/><stop offset="1" stop-color="#2E9A6E"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="12" fill="url(#lg)"/><path d="M11 21a9 9 0 1 1 3 6.8" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="M12 26l6-5 4 3 7-9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="29" cy="15" r="2.8" fill="#fff"/></svg>Дайджест</div>
+    <ol class="steps" id="steps">
+      <li data-i="0"><b>1</b><span>Добро пожаловать<span class="d">что будет дальше</span></span></li>
+      <li data-i="1"><b>2</b><span>База данных<span class="d">создаётся сама</span></span></li>
+      <li data-i="2"><b>3</b><span>Искусственный интеллект<span class="d">Claude, Gemini или GPT</span></span></li>
+      <li data-i="3"><b>4</b><span>Zenmoney<span class="d">ваши счета и операции</span></span></li>
+      <li data-i="4"><b>5</b><span>Почта<span class="d">чеки из писем</span></span></li>
+      <li data-i="5"><b>6</b><span>Готово<span class="d">проверка и запуск</span></span></li>
+    </ol>
+  </aside>
+
+  <main class="c">
+    <!-- 1 -->
+    <section class="pane" data-i="0">
+      <h1>Настроим дайджест за 5 минут</h1>
+      <p class="lead">Мастер проведёт по шагам и объяснит, что и зачем мы делаем. Дополнительно ничего устанавливать не нужно: база данных, шрифты и всё для работы уже внутри программы.</p>
+      <div class="grid2">
+        <ol class="how">
+          <li>База данных<small>Создадим локальный файл для чеков, квитанций и ваших настроек. Он не покидает компьютер.</small></li>
+          <li>Искусственный интеллект<small>Ключ одного из сервисов — Claude, Gemini или GPT. ИИ читает фото и PDF чеков и квитанций.</small></li>
+          <li>Zenmoney<small>Токен доступа, чтобы дайджест брал счета и операции напрямую.</small></li>
+          <li>Почта <span class="opt">по желанию</span><small>Чтобы чеки из магазинов подтягивались из писем автоматически.</small></li>
+        </ol>
+        <figure class="ill" style="margin:0">
+          <svg viewBox="0 0 360 220" aria-hidden="true"><rect x="20" y="20" width="320" height="180" rx="16" fill="none" stroke="currentColor" stroke-opacity=".15"/>
+            <g fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round"><rect x="44" y="52" width="72" height="56" rx="12"/><rect x="144" y="52" width="72" height="56" rx="12"/><rect x="244" y="52" width="72" height="56" rx="12"/><path d="M116 80h28M216 80h28"/></g>
+            <text x="80" y="85" text-anchor="middle" font-size="11" fill="currentColor">Zenmoney</text><text x="180" y="85" text-anchor="middle" font-size="11" fill="currentColor">ИИ</text><text x="280" y="85" text-anchor="middle" font-size="11" fill="currentColor">Почта</text>
+            <path d="M80 108v30h200v-30M180 108v30" fill="none" stroke="var(--pos)" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="120" y="138" width="120" height="40" rx="12" fill="var(--pos)"/><text x="180" y="163" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">Ваш дайджест</text></svg>
+          <figcaption>Подключения сходятся в один отчёт. Всё можно поменять позже — кнопка со штекером вверху отчёта.</figcaption>
+        </figure>
+      </div>
+      <div class="nav"><span class="nt">Ключи и пароли хранятся отдельным зашифрованным файлом.</span><button class="bn" data-next>Начать</button></div>
+    </section>
+
+    <!-- 2 -->
+    <section class="pane" data-i="1">
+      <h1>База данных</h1>
+      <p class="lead">Мы уже создали её автоматически — ничего делать не нужно. Здесь будут чеки, квитанции ЖКХ, их оригиналы и ваши цели и параметры отчёта.</p>
+      <div class="grid2">
+        <div><p><span class="pulse"></span><b id="dbst">Проверяю…</b></p><div class="kv" id="dbkv"></div>
+          <div class="imp"><b>Перенести данные из веб-версии</b> <span class="opt">по желанию</span>
+            <ol class="how" style="margin-top:10px"><li>В веб-версии дайджеста нажмите кнопку «Данные» (цилиндр в шапке) → «Экспортировать данные (JSON)»</li><li>Выберите сохранённый файл здесь<small>Перенесутся цели, параметры, оценки квартиры, строки квитанций ЖКХ и позиции чеков.</small></li></ol>
+            <label class="bn gh" style="display:inline-flex;align-items:center">Выбрать файл JSON<input id="impf" type="file" accept=".json,application/json" hidden></label>
+            <p class="msg" id="impmsg"></p></div>
+          <h3>Зачем это нужно</h3><p class="nt">В веб-версии данные лежали в облаке артефакта. Теперь — в файле SQLite на вашем компьютере: работает без интернета, быстро ищет по годам чеков, а резервную копию можно сделать простым копированием папки.</p></div>
+        <figure class="ill" style="margin:0"><svg viewBox="0 0 360 220" aria-hidden="true"><g fill="none" stroke="var(--ac)" stroke-width="2.4"><ellipse cx="120" cy="60" rx="60" ry="18"/><path d="M60 60v90c0 10 27 18 60 18s60-8 60-18V60"/><path d="M60 105c0 10 27 18 60 18s60-8 60-18"/></g>
+          <g font-size="11" fill="currentColor"><text x="210" y="62">чеки и позиции</text><text x="210" y="96">квитанции ЖКХ</text><text x="210" y="130">цели и параметры</text><text x="210" y="164">оригиналы фото/PDF</text></g>
+          <g fill="var(--pos)"><circle cx="198" cy="58" r="4"/><circle cx="198" cy="92" r="4"/><circle cx="198" cy="126" r="4"/><circle cx="198" cy="160" r="4"/></g></svg>
+          <figcaption>Файл data\digest.db и папка files\archive в профиле Windows.</figcaption></figure>
+      </div>
+      <div class="nav"><button class="bn gh" data-prev>Назад</button><button class="bn" data-next>Далее</button></div>
+    </section>
+
+    <!-- 3 -->
+    <section class="pane" data-i="2">
+      <h1>Искусственный интеллект</h1>
+      <p class="lead">ИИ разбирает фото, PDF и тексты чеков и квитанций и делает выводы. Выберите сервис — достаточно одного, остальные можно добавить позже как запасные.</p>
+      <div class="prov" id="prov">
+        <button data-p="anthropic" aria-pressed="true"><span class="lg" style="background:#C8643B">Cl</span><b>Claude</b><small>Anthropic · отлично читает чеки</small></button>
+        <button data-p="gemini" aria-pressed="false"><span class="lg" style="background:#4B6BF0">Ge</span><b>Gemini</b><small>Google · есть бесплатный лимит</small></button>
+        <button data-p="openai" aria-pressed="false"><span class="lg" style="background:#10A37F">GPT</span><b>GPT</b><small>OpenAI</small></button>
+      </div>
+      <div class="grid2">
+        <div>
+          <ol class="how" id="aihow"></ol>
+          <label class="f">Ключ API<input class="k" id="aikey" type="password" autocomplete="off" spellcheck="false" placeholder="вставьте ключ сюда"></label>
+          <button class="bn" id="aitest">Сохранить и проверить</button>
+          <p class="msg" id="aimsg"></p>
+          <p class="nt">Не открывается сайт или проверка пишет про регион? Эти сервисы бывают недоступны из России — включите VPN или укажите прокси позже в «Подключениях → Сеть и данные».</p>
+        </div>
+        <figure class="ill" style="margin:0"><svg viewBox="0 0 360 230" aria-hidden="true">
+          <rect x="16" y="16" width="328" height="198" rx="14" fill="none" stroke="currentColor" stroke-opacity=".18"/><path d="M16 44h328" stroke="currentColor" stroke-opacity=".18"/>
+          <g fill="currentColor" fill-opacity=".25"><circle cx="34" cy="30" r="4"/><circle cx="48" cy="30" r="4"/><circle cx="62" cy="30" r="4"/></g>
+          <rect x="84" y="23" width="200" height="14" rx="7" fill="currentColor" fill-opacity=".08"/><text x="94" y="34" font-size="9" fill="currentColor" id="illurl">console.anthropic.com</text>
+          <text x="36" y="72" font-size="13" font-weight="700" fill="currentColor">API keys</text>
+          <rect x="250" y="58" width="76" height="24" rx="8" fill="var(--ac)"/><text x="288" y="74" font-size="10" text-anchor="middle" fill="#fff" font-weight="700" id="illbtn">Create key</text>
+          <circle cx="288" cy="70" r="20" fill="none" stroke="var(--neg)" stroke-width="2" stroke-dasharray="4 3"/>
+          <rect x="36" y="100" width="290" height="34" rx="9" fill="currentColor" fill-opacity=".06"/><text x="48" y="121" font-size="10" fill="currentColor" font-family="IBM Plex Mono" id="illkey">sk-ant-api03-••••••••••••</text>
+          <rect x="268" y="106" width="50" height="22" rx="7" fill="none" stroke="var(--pos)" stroke-width="1.6"/><text x="293" y="121" font-size="9" text-anchor="middle" fill="var(--pos)" font-weight="700">Copy</text>
+          <path d="M180 150v24" stroke="var(--pos)" stroke-width="2" stroke-dasharray="3 3"/>
+          <rect x="96" y="176" width="168" height="26" rx="8" fill="var(--pos)"/><text x="180" y="193" font-size="10" text-anchor="middle" fill="#fff" font-weight="700">вставить сюда, в мастер</text></svg>
+          <figcaption id="illcap">Создайте ключ, скопируйте его и вставьте в поле слева.</figcaption></figure>
+      </div>
+      <div class="nav"><button class="bn gh" data-prev>Назад</button><span><button class="bn gh" data-skip>Пропустить</button> <button class="bn" data-next>Далее</button></span></div>
+    </section>
+
+    <!-- 4 -->
+    <section class="pane" data-i="3">
+      <h1>Zenmoney</h1>
+      <p class="lead">По токену дайджест загружает ваши счета, категории и операции — без логина и пароля от Zenmoney. Программа только читает данные, но сам токен даёт полный доступ к аккаунту: храните его как пароль и никому не пересылайте.</p>
+      <div class="grid2">
+        <div>
+          <ol class="how">
+            <li>Откройте страницу получения токена<small><button class="lk" data-url="https://zerro.app/token">zerro.app/token</button> — открытый веб-клиент Zenmoney, токен выдаёт сам Zenmoney.</small></li>
+            <li>Войдите своим логином Zenmoney<small>Подтвердите доступ на странице Zenmoney.</small></li>
+            <li>Скопируйте токен и вставьте ниже</li>
+          </ol>
+          <label class="f">Токен Zenmoney<input class="k" id="zentok" type="password" autocomplete="off" spellcheck="false" placeholder="вставьте токен"></label>
+          <button class="bn" id="zentest">Сохранить и проверить</button>
+          <p class="msg" id="zenmsg"></p>
+        </div>
+        <figure class="ill" style="margin:0"><svg viewBox="0 0 360 220" aria-hidden="true">
+          <rect x="16" y="16" width="328" height="188" rx="14" fill="none" stroke="currentColor" stroke-opacity=".18"/>
+          <rect x="40" y="40" width="64" height="64" rx="16" fill="#F2B200"/><text x="72" y="82" font-size="26" text-anchor="middle" font-weight="800" fill="#1b1b1b">Z</text>
+          <path d="M112 72h56" stroke="var(--ac)" stroke-width="2.4" stroke-dasharray="5 4"/><path d="M162 66l8 6-8 6" fill="none" stroke="var(--ac)" stroke-width="2.4"/>
+          <rect x="180" y="48" width="140" height="48" rx="12" fill="currentColor" fill-opacity=".06"/><text x="192" y="70" font-size="10" fill="currentColor">Ваш токен:</text><text x="192" y="86" font-size="10" fill="currentColor" font-family="IBM Plex Mono">a1b2c3••••••••</text>
+          <g font-size="11" fill="currentColor"><text x="40" y="140">✓ счета и балансы</text><text x="40" y="160">✓ категории и операции</text><text x="40" y="180">✓ программа только читает данные</text></g></svg>
+          <figcaption>Токен хранится в secrets.json в зашифрованном виде.</figcaption></figure>
+      </div>
+      <div class="nav"><button class="bn gh" data-prev>Назад</button><span><button class="bn gh" data-skip>Пропустить</button> <button class="bn" data-next>Далее</button></span></div>
+    </section>
+
+    <!-- 5 -->
+    <section class="pane" data-i="4">
+      <h1>Почта с чеками <span class="opt">по желанию</span></h1>
+      <p class="lead">Если магазины присылают вам электронные чеки, дайджест сможет сам находить такие письма и отдавать чеки ИИ на разбор.</p>
+      <div class="grid2">
+        <div>
+          <label class="f">Почтовый сервис<select id="mprov"><option value="mailru">Mail.ru (а также @inbox.ru, @list.ru, @bk.ru)</option><option value="yandex">Яндекс Почта</option><option value="gmail">Gmail</option></select></label>
+          <label class="f">Адрес почты<input id="muser" type="email" placeholder="name@mail.ru"></label>
+          <label class="f">Пароль для внешних приложений<input class="k" id="mpass" type="password" autocomplete="off"></label>
+          <p class="nt" style="margin:0 0 10px">Обычный пароль от почты не подойдёт. <button class="lk" id="mpassurl">Создать пароль приложения →</button></p>
+          <button class="bn" id="mtest">Сохранить и проверить</button>
+          <p class="msg" id="mmsg"></p>
+        </div>
+        <figure class="ill" style="margin:0"><svg viewBox="0 0 360 220" aria-hidden="true">
+          <rect x="30" y="40" width="130" height="90" rx="12" fill="none" stroke="var(--ac)" stroke-width="2.4"/><path d="M30 46l65 46 65-46" fill="none" stroke="var(--ac)" stroke-width="2.4"/>
+          <text x="95" y="150" text-anchor="middle" font-size="11" fill="currentColor">письмо «Кассовый чек»</text>
+          <path d="M172 86h40" stroke="var(--pos)" stroke-width="2.4" stroke-dasharray="5 4"/><path d="M206 80l8 6-8 6" fill="none" stroke="var(--pos)" stroke-width="2.4"/>
+          <rect x="226" y="30" width="104" height="120" rx="10" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-opacity=".2"/>
+          <g fill="currentColor" fill-opacity=".35"><rect x="238" y="46" width="60" height="6" rx="3"/><rect x="238" y="62" width="80" height="6" rx="3"/><rect x="238" y="78" width="70" height="6" rx="3"/><rect x="238" y="94" width="76" height="6" rx="3"/></g>
+          <text x="278" y="134" text-anchor="middle" font-size="11" font-weight="700" fill="var(--pos)">в архив чеков</text></svg>
+          <figcaption>Адреса отправителей магазинов задаются в «Подключениях → Почта».</figcaption></figure>
+      </div>
+      <div class="nav"><button class="bn gh" data-prev>Назад</button><span><button class="bn gh" data-skip>Пропустить</button> <button class="bn" data-next>Далее</button></span></div>
+    </section>
+
+    <!-- 6 -->
+    <section class="pane" data-i="5">
+      <h1>Всё готово</h1>
+      <p class="lead">Итог настройки. Пропущенное можно подключить в любой момент — кнопка со штекером в шапке отчёта.</p>
+      <ul class="chk" id="sum"></ul>
+      <div class="nav"><button class="bn gh" data-prev>Назад</button><button class="bn" id="finish">Открыть дайджест</button></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const N = window.fdNative, $ = id => document.getElementById(id);
+  let step = 0; const res = { db: false, ai: null, zen: null, mail: null };
+  const panes = [...document.querySelectorAll('.pane')], lis = [...document.querySelectorAll('#steps li')];
+  function go(i) {
+    step = Math.max(0, Math.min(panes.length - 1, i));
+    panes.forEach((p, k) => p.classList.toggle('on', k === step));
+    lis.forEach((l, k) => { l.classList.toggle('on', k === step); l.classList.toggle('done', k < step); });
+    if (step === 1) checkDb();
+    if (step === 5) summary();
+    const f = panes[step].querySelector('input,button.bn:not(.gh)'); if (f) setTimeout(() => f.focus(), 50);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.hasAttribute('data-next') || b.hasAttribute('data-skip')) go(step + 1);
+    if (b.hasAttribute('data-prev')) go(step - 1);
+    if (b.dataset.url) N.app.openUrl(b.dataset.url);
+  });
+  const msg = (el, t, k) => { el.textContent = t; el.className = 'msg' + (k ? ' ' + k : ''); };
+  const ERR = { auth: 'ключ не принят — проверьте, что скопировали его целиком', region: 'сервис недоступен из вашего региона — включите VPN или прокси', network: 'нет связи с сервером', timeout: 'сервер не ответил вовремя' };
+  const et = e => ERR[e.code] || e.message || 'ошибка';
+
+  async function checkDb() {
+    try {
+      const s = await N.conn.status(); res.db = true;
+      $('dbst').textContent = 'База создана и готова';
+      $('dbkv').innerHTML = `<span>Файл</span><code>${s.db.file}</code><span>Версия схемы</span><span>${s.db.schema}</span><span>Оригиналы</span><code>${s.paths.archive}</code><span>Ключи</span><code>${s.secrets.file}</code>`;
+    } catch (e) { $('dbst').textContent = 'Ошибка: ' + et(e); }
+  }
+
+  /* перенос из веб-версии: те же ключи, что пишет экспорт отчёта */
+  $('impf').onchange = async function () {
+    const f = this.files[0]; if (!f) return;
+    try {
+      const d = JSON.parse(await f.text()), keys = ['par', 'goals4', 'it', 'rcp', 'rules', 'vl', 'pe'], t = Date.now();
+      let n = 0;
+      for (const k of keys) if (d[k] != null) { await N.store.set('data/users/local', k, { v: d[k], t }); n++; }
+      if (!n) throw new Error('в файле нет данных дайджеста');
+      msg($('impmsg'), `Перенесено: строк ЖКХ ${(d.it || []).length}, позиций чеков ${(d.rcp || []).length}, целей ${(d.goals4 || []).length}.`, 'ok');
+    } catch (e) { msg($('impmsg'), 'Файл не распознан: ' + (e.message || e), 'err'); }
+    this.value = '';
+  };
+
+  /* ИИ */
+  const AI = {
+    anthropic: { url: 'https://console.anthropic.com/settings/keys', host: 'console.anthropic.com', btn: 'Create Key', key: 'sk-ant-api03-••••••••', steps: ['Откройте console.anthropic.com и войдите (или зарегистрируйтесь)', 'Пополните баланс в разделе Billing — без него ключ не работает', 'Settings → API Keys → «Create Key», скопируйте ключ'] },
+    gemini: { url: 'https://aistudio.google.com/app/apikey', host: 'aistudio.google.com', btn: 'Create API key', key: 'AIzaSy••••••••••••', steps: ['Откройте Google AI Studio и войдите аккаунтом Google', 'Нажмите «Get API key» → «Create API key»', 'Скопируйте ключ (начинается с AIza)'] },
+    openai: { url: 'https://platform.openai.com/api-keys', host: 'platform.openai.com', btn: 'Create new key', key: 'sk-proj-••••••••••', steps: ['Откройте platform.openai.com и войдите', 'Пополните баланс в Settings → Billing', 'API keys → «Create new secret key», скопируйте ключ'] },
+  };
+  let prov = 'anthropic';
+  function paintAI() {
+    const a = AI[prov];
+    document.querySelectorAll('#prov button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === prov)));
+    $('aihow').innerHTML = a.steps.map((s, i) => `<li>${i === 0 ? `<button class="lk" data-url="${a.url}">${s}</button>` : s}</li>`).join('');
+    $('illurl').textContent = a.host; $('illbtn').textContent = a.btn; $('illkey').textContent = a.key;
+    msg($('aimsg'), '');
+  }
+  $('prov').onclick = e => { const b = e.target.closest('[data-p]'); if (b) { prov = b.dataset.p; paintAI(); } };
+  $('aitest').onclick = async () => {
+    const k = $('aikey').value.trim(); if (!k) return msg($('aimsg'), 'Вставьте ключ в поле выше.', 'err');
+    msg($('aimsg'), 'Проверяю…');
+    try {
+      await N.conn.setSecret(prov + '_api_key', k);
+      const r = await N.conn.test(prov);
+      const models = (r.models || []).filter(m => m.chat !== false);
+      const pref = models.find(m => /sonnet/.test(m.id)) || models.find(m => /flash/.test(m.id) && !/lite|preview|exp/.test(m.id)) || models[0];
+      await N.conn.setAi({ primary: prov, enabled: { [prov]: true }, models: pref ? { [prov]: pref.id } : {} });
+      res.ai = prov; msg($('aimsg'), `Готово! Подключено, модель: ${pref ? pref.name || pref.id : '—'}.`, 'ok');
+    } catch (e) { res.ai = null; msg($('aimsg'), 'Не получилось: ' + et(e) + '.', 'err'); }
+  };
+
+  /* Zenmoney */
+  $('zentest').onclick = async () => {
+    const t = $('zentok').value.trim(); if (!t) return msg($('zenmsg'), 'Вставьте токен.', 'err');
+    msg($('zenmsg'), 'Проверяю…');
+    try {
+      await N.conn.setSecret('zenmoney_token', t); await N.conn.setZen({ enabled: true });
+      const r = await N.conn.test('zenmoney'); res.zen = true;
+      msg($('zenmsg'), 'Подключено' + (r.login ? ': ' + r.login : '') + '. Загружаю историю операций…', 'ok');
+      const st = await N.digest.refresh({ full: true });
+      msg($('zenmsg'), `Подключено${r.login ? ': ' + r.login : ''}. Загружено операций: ${(st.lastRun || {}).total ?? '—'}.`, 'ok');
+    }
+    catch (e) { res.zen = null; msg($('zenmsg'), 'Не получилось: ' + et(e) + '.', 'err'); }
+  };
+
+  /* Почта */
+  const PASS = { mailru: 'https://account.mail.ru/user/2-step-auth/passwords/', yandex: 'https://id.yandex.ru/security/app-passwords', gmail: 'https://myaccount.google.com/apppasswords' };
+  const HOST = { mailru: 'imap.mail.ru', yandex: 'imap.yandex.ru', gmail: 'imap.gmail.com' };
+  $('mpassurl').onclick = () => N.app.openUrl(PASS[$('mprov').value]);
+  $('mtest').onclick = async () => {
+    const u = $('muser').value.trim(), p = $('mpass').value;
+    if (!u || !p) return msg($('mmsg'), 'Укажите адрес и пароль приложения.', 'err');
+    msg($('mmsg'), 'Подключаюсь…');
+    try {
+      const v = $('mprov').value;
+      await N.conn.setMail({ provider: v, host: HOST[v], port: 993, user: u, enabled: true });
+      await N.conn.setSecret('mail_password', p);
+      const r = await N.conn.test('mail'); res.mail = true;
+      msg($('mmsg'), `Подключено. Писем во «Входящих»: ${r.total}.`, 'ok');
+    } catch (e) { res.mail = null; msg($('mmsg'), 'Не получилось: ' + et(e) + '.', 'err'); }
+  };
+
+  function summary() {
+    const row = (ok, t, d) => `<li><i class="${ok ? 'ok' : 'sk'}">${ok ? '✓' : '–'}</i><span><b>${t}</b><br><span class="nt">${d}</span></span></li>`;
+    $('sum').innerHTML = row(res.db, 'База данных', res.db ? 'создана' : 'будет создана при запуске') +
+      row(!!res.ai, 'Искусственный интеллект', res.ai ? { anthropic: 'Claude', gemini: 'Gemini', openai: 'GPT' }[res.ai] + ' подключён' : 'пропущено — без ИИ фото чеков не разбираются') +
+      row(!!res.zen, 'Zenmoney', res.zen ? 'подключён, история загружена; дальше — обновление в 08:00 и 20:00 (меняется в «Подключениях → Обновление»)' : 'пропущено — отчёт покажет данные веб-версии') +
+      row(!!res.mail, 'Почта', res.mail ? 'подключена' : 'пропущено');
+  }
+  $('finish').onclick = () => N.app.firstRunDone();
+  paintAI(); go(0);
+})();
+</script>
+</body>
+</html>

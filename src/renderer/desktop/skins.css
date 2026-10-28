@@ -1,0 +1,38 @@
+/*
+ * Тёмная тема = «Полночь»: графитовое стекло, бирюзовый акцент. Светлая тема — исходный вид отчёта.
+ * Включается переключателем темы в шапке (data-theme="dark") или системной тёмной темой при «Авто».
+ */
+html:root[data-theme="dark"]{
+  --bg:#0B0E13;--tx:#F2F5F8;--mu:#A3ADBB;--gl:rgba(255,255,255,.05);--gb:rgba(255,255,255,.12);--s2:rgba(255,255,255,.06);--s3:rgba(255,255,255,.11);--bd:rgba(255,255,255,.09);
+  --ac:#3FC1EE;--on:#04141B;--pos:#5EDDA0;--neg:#FF8A80;--g1:#8792A3;
+  --fill:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.02) 70%);--tint:rgba(12,16,22,.60);--hl:rgba(255,255,255,.20);
+  --sh:0 30px 60px -30px rgba(0,0,0,.85);
+  --hero:linear-gradient(150deg,rgba(40,170,220,.55),rgba(20,90,140,.45));
+  --bgg:radial-gradient(900px 600px at 85% -10%,rgba(40,160,210,.30),transparent 60%),radial-gradient(800px 600px at 0% 100%,rgba(255,140,80,.12),transparent 60%),linear-gradient(170deg,#0F131A,#090B10);
+  --hd:rgba(11,14,19,.70);--panel:rgba(16,20,27,.95);
+  --cat1:#1c97c4;--cat2:#d95926;--cat3:#9085e9;--cat4:#c98500;--cat5:#d55181;--cat6:#3987e5;--cat7:#199e70;--cat8:#e66767;
+}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]){
+  --bg:#0B0E13;--tx:#F2F5F8;--mu:#A3ADBB;--gl:rgba(255,255,255,.05);--gb:rgba(255,255,255,.12);--s2:rgba(255,255,255,.06);--s3:rgba(255,255,255,.11);--bd:rgba(255,255,255,.09);
+  --ac:#3FC1EE;--on:#04141B;--pos:#5EDDA0;--neg:#FF8A80;--g1:#8792A3;
+  --fill:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.02) 70%);--tint:rgba(12,16,22,.60);--hl:rgba(255,255,255,.20);
+  --sh:0 30px 60px -30px rgba(0,0,0,.85);
+  --hero:linear-gradient(150deg,rgba(40,170,220,.55),rgba(20,90,140,.45));
+  --bgg:radial-gradient(900px 600px at 85% -10%,rgba(40,160,210,.30),transparent 60%),radial-gradient(800px 600px at 0% 100%,rgba(255,140,80,.12),transparent 60%),linear-gradient(170deg,#0F131A,#090B10);
+  --hd:rgba(11,14,19,.70);--panel:rgba(16,20,27,.95);
+  --cat1:#1c97c4;--cat2:#d95926;--cat3:#9085e9;--cat4:#c98500;--cat5:#d55181;--cat6:#3987e5;--cat7:#199e70;--cat8:#e66767;
+}}
+/* материалы и контраст «Полночи» */
+/* Иерархия материалов: шапка и нижняя панель — плотнее и сильнее размыты, чем карточки;
+   всплывающие панели — почти непрозрачные (светлое стекло поверх светлого стекла не читается) */
+html:root[data-theme="dark"] .top .in::before{backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]) .top .in::before{backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}}
+@media (max-width:780px){html:root[data-theme="dark"] .tabs{backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}}
+@media (max-width:780px) and (prefers-color-scheme:dark){html:root:not([data-theme="light"]) .tabs{backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%)}}
+html:root[data-theme="dark"] #cnp,html:root[data-theme="dark"] #dmp,html:root[data-theme="dark"] #asp,html:root[data-theme="dark"] .fd-menu,html:root[data-theme="dark"] .fd-toast{background:var(--panel)}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]) #cnp,html:root:not([data-theme="light"]) #dmp,html:root:not([data-theme="light"]) #asp,html:root:not([data-theme="light"]) .fd-menu,html:root:not([data-theme="light"]) .fd-toast{background:var(--panel)}}
+/* Подсказки и подписи на стекле — не светлее --mu (контраст ≥ 4.5:1 на карточке) */
+html:root[data-theme="dark"] .nt,html:root[data-theme="dark"] .l,html:root[data-theme="dark"] .sub{color:var(--mu)}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]) .nt,html:root:not([data-theme="light"]) .l,html:root:not([data-theme="light"]) .sub{color:var(--mu)}}
+html:root[data-theme="dark"] .hero .nt,html:root[data-theme="dark"] .hero .l{color:inherit;opacity:.86}
+@media (prefers-color-scheme:dark){html:root:not([data-theme="light"]) .hero .nt,html:root:not([data-theme="light"]) .hero .l{color:inherit;opacity:.86}}

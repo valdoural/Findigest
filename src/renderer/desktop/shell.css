@@ -1,0 +1,132 @@
+/* Шапка настольной версии: сетка «логотип | вкладки | действия».
+   Режим сжатия выбирает shell.js по фактической ширине (data-tabs, data-logo, data-act на .top .in),
+   поэтому вкладки никогда не наезжают на логотип и кнопки при любом размере окна. */
+
+.top .in{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:12px}
+.top .in>.logo{min-width:0;grid-column:1}
+.fd-actions{grid-column:3;display:flex;align-items:center;gap:8px;margin-right:8px}
+.fd-actions .ib{flex:none}
+
+/* широкое окно: вкладки в шапке, режим подписи подбирает shell.js */
+@media (min-width:781px){
+  .top .tabs{grid-column:2;display:flex;justify-content:space-evenly;gap:4px;min-width:0;overflow:hidden;flex:none}
+  .top .tabs button{flex:0 0 auto;padding:0 12px;gap:6px}
+  .top .in[data-tabs="full"] .tabs .tl{display:inline!important}
+  .top .in[data-tabs="full"] .tabs .ts{display:none!important}
+  .top .in[data-tabs="short"] .tabs .tl{display:none!important}
+  .top .in[data-tabs="short"] .tabs .ts{display:inline!important}
+  .top .in[data-tabs="iconsel"] .tabs .tl,.top .in[data-tabs="icon"] .tabs .tl{display:none!important}
+  .top .in[data-tabs="iconsel"] .tabs .ts{display:none!important}
+  .top .in[data-tabs="iconsel"] .tabs button[aria-selected="true"] .ts{display:inline!important}
+  .top .in[data-tabs="icon"] .tabs .ts{display:none!important}
+  .top .in[data-tabs="icon"] .tabs button,.top .in[data-tabs="iconsel"] .tabs button:not([aria-selected="true"]){padding:0 12px;min-width:44px;justify-content:center}
+}
+/* узкое окно: вкладки — нижняя панель (как в мобильном шаблоне веб-версии), в шапке логотип и кнопки */
+@media (max-width:780px){
+  .fd-actions{margin-left:auto}
+  main{padding-bottom:96px}
+}
+.top .in[data-logo="full"] .logo span{display:inline!important}
+.top .in[data-logo="mark"] .logo span{display:none!important}
+.top .in>.logo{overflow:hidden}
+
+/* редкие действия (данные, скрыть суммы, тема) уходят в меню «⋯» на узком окне */
+#fdMore{display:none}
+.top .in[data-act="menu"] .fd-actions .fd-rare{display:none}
+.top .in[data-act="menu"] #fdMore{display:grid}
+.fd-menu{position:fixed;z-index:45;min-width:220px;padding:6px;border-radius:16px;border:1px solid var(--gb);
+  background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 14px 40px rgba(15,23,42,.22)}
+.fd-menu[hidden]{display:none}
+.fd-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--tx);font:600 .86rem Manrope,sans-serif;cursor:pointer;text-align:left;transition:background-color .15s}
+.fd-menu button:hover,.fd-menu button:focus-visible{background:var(--s2)}
+.fd-menu svg{width:20px;height:20px;flex:none}
+
+/* плашка «условные данные» */
+.fd-demo-bar{display:none}
+.fd-demo .fd-demo-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 18px;padding:10px 14px;border-radius:16px;
+  border:1px dashed color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 8%,transparent);font-size:.86rem}
+.fd-demo-bar span{flex:1 1 260px}
+.fd-demo-bar .bn{min-height:40px}
+
+/* переход между режимами — без «прыжков»: меняется только прозрачность подписи */
+@media (prefers-reduced-motion:no-preference){.top .tabs .tl,.top .tabs .ts{animation:fdfade .18s ease}}
+@keyframes fdfade{from{opacity:0}to{opacity:1}}
+
+/* очень узкое окно: длинные суммы в строках категорий переносятся, а не выталкивают страницу вбок */
+@media (max-width:520px){
+  .row>*{min-width:0}
+  .row .v{white-space:normal;overflow-wrap:anywhere}
+  .row .v small{white-space:normal}
+}
+/* «Хороший» сигнал (.sig.g) случайно наследует оформление строки цели (.g): полоса снизу и лишние отступы */
+.sig.g{border-bottom:0;padding-top:0;padding-bottom:0}
+/* Фокус с клавиатуры не прячется под плавающей шапкой и нижней панелью вкладок */
+html{scroll-padding-top:96px}
+@media (max-width:780px){html{scroll-padding-bottom:104px}}
+/* Движение: сильный ease-out для появлений (общий токен модулей программы) */
+:root{--fd-ease-out:cubic-bezier(0.23,1,0.32,1)}
+/* Меню «⋯»: из кнопки (правый верх), 150 мс */
+.fd-menu{transform-origin:top right;transition:opacity .15s var(--fd-ease-out),transform .15s var(--fd-ease-out)}
+@starting-style{.fd-menu{opacity:0;transform:scale(.97)}}
+@media (prefers-reduced-motion:reduce){@starting-style{.fd-menu{transform:none}}}
+/* Логотипы банков и магазинов вместо букв: белая подложка и тонкая обводка, чтобы значок читался в обеих темах */
+.bd.fd-logo{box-shadow:inset 0 0 0 1px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.08)}
+/* Настройки Windows «Эффекты прозрачности: выкл.» и «Контрастность»: стекло становится плотным, границы — чёткими */
+@media (prefers-reduced-transparency:reduce){
+  .c,.top .in::before,.tabs,#cnp,#dmp,#asp,.fd-menu,.fd-toast{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--bg)!important}
+  .c{background:color-mix(in srgb,var(--bg) 88%,var(--tx) 4%)!important}
+}
+@media (prefers-contrast:more){
+  :root{--mu:var(--tx);--bd:color-mix(in srgb,var(--tx) 40%,transparent);--gb:color-mix(in srgb,var(--tx) 40%,transparent)}
+  .c,.top .in::before,#cnp,#dmp,#asp{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--bg)!important;border:1px solid var(--bd)!important}
+}
+
+/* ---------- Всплывающие панели: появление и скрытие (не на каждый клик — на открытие панели) ---------- */
+#asp,#cnp,#dmp{transform-origin:top right;
+  transition:opacity .2s var(--fd-ease-out),transform .2s var(--fd-ease-out),display .2s allow-discrete,overlay .2s allow-discrete}
+#asp[hidden],#cnp[hidden],#dmp[hidden]{display:none;opacity:0;transform:translateY(-6px) scale(.985)}
+@starting-style{#asp,#cnp,#dmp{opacity:0;transform:translateY(-6px) scale(.985)}}
+#dmp.dmp{animation:none}
+.fd-menu{transition:opacity .15s var(--fd-ease-out),transform .15s var(--fd-ease-out),display .15s allow-discrete}
+.fd-menu[hidden]{display:none;opacity:0;transform:scale(.97)}
+.job{transition:opacity .2s var(--fd-ease-out),translate .2s var(--fd-ease-out),display .2s allow-discrete}
+.job[hidden]{display:none;opacity:0;translate:0 8px}
+@starting-style{.job{opacity:0;translate:0 8px}}
+.fd-toast{transition:opacity .2s var(--fd-ease-out),transform .2s var(--fd-ease-out),left .25s var(--fd-ease-out),bottom .25s var(--fd-ease-out),display .2s allow-discrete}
+.fd-toast[hidden]{display:none;opacity:0;transform:translateY(8px)}
+#tip{transition:opacity .15s var(--fd-ease-out),translate .15s var(--fd-ease-out)}
+/* подсказки статуса проявляются при новом тексте */
+.fd-status-in{animation:fdstatus .24s var(--fd-ease-out)}
+@keyframes fdstatus{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  #asp,#cnp,#dmp,.fd-menu,.job,.fd-toast{transition:opacity .15s,display .15s allow-discrete}
+  #asp[hidden],#cnp[hidden],#dmp[hidden],.fd-menu[hidden],.fd-toast[hidden]{transform:none}.job[hidden]{translate:none}
+  @starting-style{#asp,#cnp,#dmp{transform:none}.job{translate:none}}
+  @keyframes fdstatus{from{opacity:0}to{opacity:1}}
+}
+
+/* ---------- Не наслаиваются: тост и панель прогресса уходят от открытой боковой панели ---------- */
+body:has(#asp:not([hidden])) .fd-toast,body:has(#cnp:not([hidden])) .fd-toast,body:has(#dmp:not([hidden])) .fd-toast{right:auto;left:max(16px,calc((100vw - 1240px)/2 + 24px))}
+body:has(#asp:not([hidden])) .job,body:has(#cnp:not([hidden])) .job,body:has(#dmp:not([hidden])) .job{left:max(16px,calc((100vw - 1240px)/2 + 24px));transform:none;width:min(520px,calc(100vw - 540px))}
+/* тост над панелью прогресса, если обе видны */
+body:has(.job:not([hidden])) .fd-toast{bottom:calc(env(safe-area-inset-bottom,0px) + 130px)}
+@media (max-width:1100px){
+  body:has(#asp:not([hidden])) .job,body:has(#cnp:not([hidden])) .job,body:has(#dmp:not([hidden])) .job{width:auto;right:16px;left:16px;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 80px)}
+  body:has(#asp:not([hidden])) .fd-toast,body:has(#cnp:not([hidden])) .fd-toast,body:has(#dmp:not([hidden])) .fd-toast{left:16px;right:16px;max-width:none;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 80px)}
+}
+
+/* «Баланс»: колонка «График» + «Сигналы дня» рядом с «Категориями» */
+.fd-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+.fd-col>.c{flex:none}.fd-col>.c:last-child{flex:1 1 auto}
+@media (max-width:780px){.fd-col{grid-column:span 12}}
+#sheet1 .bt:has(>.c.s8>h2 + details){align-items:start}
+/* «Категории» в узкой колонке справа от графика: значок, название, сумма — в строку, полоса сравнения — под ними */
+#cats .row{grid-template-columns:28px minmax(0,1fr) auto!important;row-gap:4px}
+#cats .row>:nth-child(3){grid-column:2/-1;grid-row:2}
+#cats .row>.v{grid-column:3;grid-row:1;white-space:normal;max-width:none}
+#cats .row>.v small{display:block;white-space:normal;max-width:180px;margin-left:auto}
+#cats .row>:nth-child(2){min-width:0;overflow-wrap:anywhere}
+
+/* «Цели и прогноз» и «Справка» — всегда одной высоты (верх и низ на одном уровне) */
+#fd-goalrow{align-items:stretch}
+#fd-goalrow>.c{align-self:stretch;margin-bottom:0}

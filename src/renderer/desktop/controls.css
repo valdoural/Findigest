@@ -1,0 +1,170 @@
+/*
+ * Выпадающие списки по всей программе: скруглённое поле и скруглённый раскрывающийся список в стиле темы.
+ * Chromium 135+ позволяет оформить и сам список (appearance: base-select); где не поддерживается — остаётся
+ * скруглённое поле с системным списком. Подключается в отчёте и мастере настройки.
+ */
+@supports (appearance: base-select) {
+  :root select,:root select::picker(select){appearance:base-select}
+  :root select{
+    display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px 0 14px;
+    border:1px solid var(--bd);border-radius:14px;background:var(--gl);color:var(--tx);font:inherit;cursor:pointer;
+    transition:border-color .15s,background-color .15s,box-shadow .15s}
+  :root select:hover{border-color:color-mix(in srgb,var(--ac) 45%,var(--bd))}
+  :root select:open{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 18%,transparent)}
+  :root select:disabled{opacity:.55;cursor:not-allowed}
+  /* стрелка: тонкий шеврон, поворачивается, когда список открыт */
+  :root select::picker-icon{content:"";width:10px;height:10px;margin-left:auto;flex:none;
+    border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:translateY(-2px) rotate(45deg);
+    transition:transform .2s var(--fd-ease-out,ease-out)}
+  :root select:open::picker-icon{transform:translateY(2px) rotate(225deg)}
+  /* раскрывающийся список: плотная «стеклянная» панель, скругление 16 px, прокрутка у длинных списков */
+  :root select::picker(select){
+    border:1px solid var(--gb);border-radius:16px;padding:6px;margin-block:6px;
+    background:var(--panel,color-mix(in srgb,var(--bg) 96%,var(--tx) 2%));color:var(--tx);
+    box-shadow:0 18px 44px -12px rgba(15,23,42,.35),0 2px 6px rgba(15,23,42,.08);
+    max-height:min(62vh,440px);overflow-y:auto;overscroll-behavior:contain;
+    transition:opacity .15s var(--fd-ease-out,ease-out),transform .15s var(--fd-ease-out,ease-out),display .15s allow-discrete,overlay .15s allow-discrete;
+    transform-origin:top center}
+  @starting-style{:root select:open::picker(select){opacity:0;transform:translateY(-4px) scale(.98)}}
+  :root select option{display:flex;align-items:center;gap:8px;min-height:38px;padding:8px 12px;border-radius:10px;
+    font:inherit;font-size:.9rem;line-height:1.3;cursor:pointer;white-space:normal}
+  :root select option:hover,:root select option:focus-visible{background:var(--s2);outline:none}
+  :root select option:checked{font-weight:600;background:color-mix(in srgb,var(--ac) 12%,transparent)}
+  :root select option::checkmark{content:"";order:1;margin-left:auto;width:6px;height:11px;flex:none;
+    border-right:2px solid var(--ac);border-bottom:2px solid var(--ac);transform:rotate(45deg) translate(-2px,-1px)}
+  :root select option:disabled{opacity:.5;cursor:default}
+  /* группы (например, «Для отчёта и помощника» / «Другие модели API») */
+  :root select optgroup{display:block;padding:0;margin:0}
+  :root select optgroup legend{padding:10px 12px 4px;font-size:.72rem;font-weight:600;color:var(--mu);letter-spacing:.01em}
+  :root select optgroup + optgroup,:root select optgroup + option,:root select option + optgroup{border-top:1px solid var(--bd);margin-top:4px;padding-top:4px}
+  @media (prefers-reduced-motion:reduce){:root select::picker(select),:root select::picker-icon{transition:none}}
+}
+/* без поддержки — хотя бы скруглённое поле */
+:root select{border-radius:14px}
+
+/*
+ * Переключатели вместо галочек — для всех флажков программы (кроме уже оформленных .tg в отчёте).
+ * Рисуются самим полем (без лишней разметки): дорожка 44×26, «бегунок» — круг в фоне, сдвигается при включении.
+ * Подпись — сразу справа (метки .cn-prim / .tg выстроены в строку).
+ */
+:root input[type=checkbox]:not(.tg input){
+  appearance:none;-webkit-appearance:none;flex:none;box-sizing:border-box;width:44px;height:26px;min-width:44px;min-height:26px;margin:0;padding:0;
+  border-radius:99px;border:1px solid var(--bd);cursor:pointer;vertical-align:middle;
+  background:var(--s2) radial-gradient(circle,var(--mu) 0 8.5px,transparent 9px) no-repeat 2px 50%/22px 22px;
+  transition:background-color .2s,border-color .2s,background-position .22s var(--fd-ease-out,ease-out)}
+:root input[type=checkbox]:not(.tg input):checked{
+  background-color:var(--ac);border-color:var(--ac);
+  background-image:radial-gradient(circle,var(--on,#fff) 0 8.5px,transparent 9px);background-position:18px 50%}
+:root input[type=checkbox]:not(.tg input):hover{border-color:color-mix(in srgb,var(--ac) 50%,var(--bd))}
+:root input[type=checkbox]:not(.tg input):focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+:root input[type=checkbox]:not(.tg input):disabled{opacity:.5;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){:root input[type=checkbox]:not(.tg input){transition:background-color .2s,border-color .2s}}
+@media (prefers-contrast:more){:root input[type=checkbox]:not(.tg input){border-color:var(--tx)}}
+
+/*
+ * Цвета категорий в круговых диаграммах и списках: 16 фиксированных цветов (у вариантов оформления первые 8 — свои).
+ * Порядок подобран и проверен dataviz/validate_palette: соседние цвета различимы и при дальтонизме, в обеих темах.
+ */
+:root{--cat1:#2a78d6;--cat2:#eb6834;--cat3:#1baf7a;--cat4:#eda100;--cat5:#e87ba4;--cat6:#008300;--cat7:#6250d6;--cat8:#e34948;--cat9:#00938f;--cat10:#b0621a;--cat11:#2f9ad6;--cat12:#5f9e1e;--cat13:#c93f7a;--cat14:#4762d1;--cat15:#e0704c;--cat16:#8a46b8;}
+:root[data-skin]{--cat9:#00938f;--cat10:#b0621a;--cat11:#2f9ad6;--cat12:#5f9e1e;--cat13:#c93f7a;--cat14:#4762d1;--cat15:#e0704c;--cat16:#8a46b8;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cat1:#3987e5;--cat2:#d95926;--cat3:#199e70;--cat4:#c98500;--cat5:#d55181;--cat6:#008300;--cat7:#9085e9;--cat8:#e66767;--cat9:#00a3a0;--cat10:#c0742a;--cat11:#2f9fd6;--cat12:#5ea31b;--cat13:#d4508a;--cat14:#5c78e0;--cat15:#d2603c;--cat16:#a061cf;}:root[data-skin]:not([data-theme="light"]){--cat9:#00a3a0;--cat10:#c0742a;--cat11:#2f9fd6;--cat12:#5ea31b;--cat13:#d4508a;--cat14:#5c78e0;--cat15:#d2603c;--cat16:#a061cf;}}
+:root[data-theme="dark"]{--cat1:#3987e5;--cat2:#d95926;--cat3:#199e70;--cat4:#c98500;--cat5:#d55181;--cat6:#008300;--cat7:#9085e9;--cat8:#e66767;--cat9:#00a3a0;--cat10:#c0742a;--cat11:#2f9fd6;--cat12:#5ea31b;--cat13:#d4508a;--cat14:#5c78e0;--cat15:#d2603c;--cat16:#a061cf;}
+:root[data-skin][data-theme="dark"]{--cat9:#00a3a0;--cat10:#c0742a;--cat11:#2f9fd6;--cat12:#5ea31b;--cat13:#d4508a;--cat14:#5c78e0;--cat15:#d2603c;--cat16:#a061cf;}
+
+/* ---------- Календарь (desktop/datepicker.js): поле со своим значком и скруглённое окно ---------- */
+:root input[type=date],:root input[type=month]{padding-right:42px;background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2218%22%20height%3D%2218%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%237A849C%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%223%22%20y%3D%225%22%20width%3D%2218%22%20height%3D%2216%22%20rx%3D%223%22/%3E%3Cpath%20d%3D%22M3%2010h18M8%203v4M16%203v4%22/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:18px 18px;border-radius:14px;cursor:text}
+:root input[type=date]::-webkit-calendar-picker-indicator,:root input[type=month]::-webkit-calendar-picker-indicator{display:none}
+.fd-cal{position:fixed;z-index:95;width:296px;padding:10px;border-radius:18px;border:1px solid var(--gb);
+  background:var(--panel,color-mix(in srgb,var(--bg) 96%,var(--tx) 2%));color:var(--tx);
+  box-shadow:0 18px 44px -12px rgba(15,23,42,.35),0 2px 6px rgba(15,23,42,.08);font:inherit;
+  transition:opacity .18s var(--fd-ease-out,ease-out),transform .18s var(--fd-ease-out,ease-out),display .18s allow-discrete}
+.fd-cal[hidden]{display:none;opacity:0;transform:translateY(-4px) scale(.98)}
+@starting-style{.fd-cal{opacity:0;transform:translateY(-4px) scale(.98)}}
+.fd-cal-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.fd-cal-head b{font-size:.92rem;text-transform:capitalize}
+.fd-cal-nav{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent;color:var(--tx);cursor:pointer}
+.fd-cal-nav:hover{background:var(--s2)}
+.fd-cal-wd{display:grid;grid-template-columns:repeat(7,1fr);font-size:.7rem;color:var(--mu);text-align:center;margin:2px 0 4px}
+.fd-cal-grid{display:grid;gap:2px}
+.fd-cal-grid.d{grid-template-columns:repeat(7,1fr)}
+.fd-cal-grid.m{grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0}
+.fd-cal-grid button{height:36px;border:0;border-radius:11px;background:transparent;color:var(--tx);font:inherit;font-size:.84rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .15s,color .15s,transform .14s var(--fd-ease-out,ease-out)}
+.fd-cal-grid.m button{height:44px}
+.fd-cal-grid button:hover{background:var(--s2)}
+.fd-cal-grid button.out{color:var(--mu);opacity:.6}
+.fd-cal-grid button.now{box-shadow:inset 0 0 0 1px var(--ac)}
+.fd-cal-grid button.sel{background:var(--ac);color:var(--on,#fff);font-weight:600}
+.fd-cal-grid button:disabled{opacity:.3;cursor:not-allowed}
+.fd-cal-grid button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.fd-cal-grid button:active:not(:disabled){transform:scale(.92)}
+.fd-cal-foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
+.fd-cal-foot .bn{min-height:38px;padding:0 12px;font-size:.8rem}
+@media (prefers-reduced-motion:reduce){.fd-cal,.fd-cal-grid button{transition:opacity .15s,display .15s allow-discrete}@starting-style{.fd-cal{transform:none}}.fd-cal-grid button:active:not(:disabled){transform:none}}
+
+/* ---------- Кнопки: отклик на нажатие и выбор (погружение при нажатии, «щелчок» при выборе) ---------- */
+:root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button,#cnp [data-t]){
+  transition:transform .16s var(--fd-ease-out,ease-out),background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+:root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button):active:not(:disabled){transform:scale(.96)}
+:root .row[role=button]{transition:background-color .15s ease,transform .14s var(--fd-ease-out,ease-out)}
+:root .row[role=button]:active{transform:scale(.99)}
+@media (hover:hover) and (pointer:fine){
+  :root :is(.bn:not(.gh),.cn-tile,.cn-skin):hover:not(:disabled){box-shadow:0 6px 18px -10px color-mix(in srgb,var(--ac) 55%,transparent)}
+  :root :is(.cn-tile,.cn-skin):hover{transform:translateY(-1px)}
+}
+/* выбор: элемент «щёлкает», когда становится выбранным (кнопки-переключатели, вкладки, варианты) */
+:root :is(.seg button,.rch button,.cn-skin,#cnp [data-t])[aria-pressed="true"],
+:root :is(.cn-skin)[aria-checked="true"],:root #cnp [data-t][aria-selected="true"]{animation:fdpick .3s var(--fd-ease-out,ease-out)}
+@keyframes fdpick{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+:root input[type=checkbox]:not(.tg input):active:not(:disabled){transform:scale(.94)}
+:root input[type=checkbox]:not(.tg input){transition:background-color .2s,border-color .2s,background-position .22s var(--fd-ease-out,ease-out),transform .14s var(--fd-ease-out,ease-out)}
+@media (prefers-reduced-motion:reduce){
+  :root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button):active:not(:disabled),:root .row[role=button]:active,:root input[type=checkbox]:active{transform:none}
+  :root :is(.cn-tile,.cn-skin):hover{transform:none}
+  :root :is(.seg button,.rch button,.cn-skin,#cnp [data-t]){animation:none!important}
+}
+
+/* ---------- Сигналы и выводы ИИ: точка «мерцает», когда строку рассматривают ---------- */
+.sig::before{transform-origin:center;transition:transform .2s var(--fd-ease-out,ease-out)}
+.sig:hover::before,.sig:focus-within::before{animation:fdblink 1.1s ease-in-out infinite}
+@keyframes fdblink{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.28);opacity:.55}}
+@media (prefers-reduced-motion:reduce){.sig:hover::before,.sig:focus-within::before{animation:none;transform:scale(1.15)}}
+
+/* «Вы, регион и РФ»: заголовок, выбор субъекта и кнопка в одну строку */
+.fd-reg-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;margin-bottom:10px}
+.fd-reg-head h2{flex:1 1 auto;margin:0}
+.fd-reg-pick{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--mu);min-width:min(320px,100%)}
+#fd-region td .nt{font-size:.74rem}
+
+/* ---------- «Имущество»: карточки по типу (цвет и значок типа), добавление, итог сверху ---------- */
+.fd-asset{--as-c:var(--ac)}
+.c.fd-asset{position:relative;border-top:3px solid color-mix(in srgb,var(--as-c) 70%,transparent);
+  background-image:linear-gradient(180deg,color-mix(in srgb,var(--as-c) 7%,transparent),transparent 120px)}
+.fd-as-ic{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:11px;flex:none;margin-right:10px;vertical-align:middle;
+  color:var(--as-c);background:color-mix(in srgb,var(--as-c) 14%,transparent)}
+.fd-asset h2 .fd-as-ic{margin-top:-4px}
+.fd-as-h{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.fd-as-name{flex:1;min-width:0;font:inherit;font-weight:700;font-size:1.05rem;border:1px solid transparent!important;background:transparent!important;padding:0 8px;min-height:40px}
+.fd-as-name:hover,.fd-as-name:focus{border-color:var(--bd)!important;background:var(--s2)!important}
+.fd-as-v{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:12px 0 4px;padding-top:10px;border-top:1px solid var(--bd)}
+.fd-as-v span{color:var(--mu);font-size:.85rem}
+.fd-as-v b{font-size:1.25rem;color:var(--as-c);font-variant-numeric:tabular-nums}
+.fd-as-top h2{margin-bottom:2px}
+.fd-as-add{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.fd-as-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 10px;border-radius:14px;border:1px solid color-mix(in srgb,var(--as-c) 30%,var(--bd));
+  background:color-mix(in srgb,var(--as-c) 8%,transparent);color:var(--tx);font:inherit;font-size:.86rem;cursor:pointer;
+  transition:transform .16s var(--fd-ease-out,ease-out),background-color .2s,border-color .2s}
+.fd-as-chip svg{color:var(--as-c)}
+.fd-as-chip:hover{background:color-mix(in srgb,var(--as-c) 16%,transparent);border-color:color-mix(in srgb,var(--as-c) 55%,var(--bd))}
+.fd-as-chip:active{transform:scale(.96)}
+.fd-as-chip:focus-visible{outline:2px solid var(--as-c);outline-offset:2px}
+.fd-as-grid{margin-top:14px}
+.fd-asset.fd-new{animation:fdcard-in .26s var(--fd-ease-out,ease-out)}
+.fd-asset.fd-gone{opacity:0;transform:scale(.96);transition:opacity .22s ease-out,transform .24s var(--fd-ease-out,ease-out);pointer-events:none}
+@keyframes fdcard-in{from{opacity:0;transform:translateY(-4px) scale(.985)}}
+.fd-pbrk{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 2px;font-size:.84rem;opacity:.92}
+.fd-pbrk span{display:inline-flex;align-items:center;gap:6px}
+.fd-pbrk i{width:9px;height:9px;border-radius:3px;background:var(--c);box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
+@media (prefers-reduced-motion:reduce){.fd-asset.fd-new{animation:none}.fd-asset.fd-gone,.fd-as-chip{transition:opacity .15s}.fd-as-chip:active{transform:none}}
+/* значки имущества: фиксированный размер (общие правила для графиков растягивают svg на ширину) */
+.fd-as-chip svg,.fd-as-ic svg{width:20px!important;height:20px!important;max-width:none;flex:none}
+.fd-as-chip span{white-space:nowrap}

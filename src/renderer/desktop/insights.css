@@ -1,0 +1,30 @@
+/* Выводы ИИ на листах: те же карточки и точки-сигналы, что в отчёте; нейтральный тон — точка цвета акцента. */
+.fd-ai-head{margin-bottom:12px}
+.fd-ai-head h2{flex:1 1 auto;min-width:0}
+.fd-ai-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.fd-ai-meta[hidden],.fd-ai-body[hidden]{display:none}
+.fd-ai-meta .nt{margin:0;font-variant-numeric:tabular-nums}
+.fd-ai-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;white-space:nowrap}
+.fd-ai-btn svg{width:16px;height:16px;flex:none}
+.fd-ai-btn[aria-busy="true"] svg{animation:fdspin 1s linear infinite}
+@keyframes fdspin{to{transform:rotate(360deg)}}
+.fd-ai-body{transition:opacity .2s ease}
+.fd-ai-body.busy{opacity:.55}
+.fd-ai-body .sig:last-child{margin-bottom:0}
+.sig.fd-t-info::before{background:radial-gradient(circle,var(--ac) 0 4px,color-mix(in srgb,var(--ac) 22%,transparent) 4.5px)}
+.fd-ai-body .fd-ai-err{color:var(--neg);margin-top:8px}
+.fd-ai-skel{display:grid;gap:12px}
+.fd-ai-skel i{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--s2) 0%,color-mix(in srgb,var(--s2) 40%,transparent) 50%,var(--s2) 100%);background-size:200% 100%;animation:fdskel 1.4s ease-in-out infinite}
+.fd-ai-skel i:nth-child(2){width:86%}.fd-ai-skel i:nth-child(3){width:64%}
+@keyframes fdskel{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (max-width:520px){.fd-ai-meta{justify-content:flex-start;width:100%}.fd-ai-meta .nt{flex:1}}
+@media (prefers-reduced-motion:reduce){.fd-ai-btn[aria-busy="true"] svg,.fd-ai-skel i{animation:none}.fd-ai-body{transition:none}}
+/* Новые выводы проявляются мягко, по очереди (только когда текст действительно сменился) */
+.fd-ai-body .sig{transition:opacity .2s var(--fd-ease-out),transform .2s var(--fd-ease-out)}
+.fd-ai-body .sig:nth-child(2){transition-delay:40ms}.fd-ai-body .sig:nth-child(3){transition-delay:80ms}.fd-ai-body .sig:nth-child(4){transition-delay:120ms}
+@starting-style{.fd-ai-body .sig{opacity:0;transform:translateY(4px)}}
+@media (prefers-reduced-motion:reduce){@starting-style{.fd-ai-body .sig{transform:none}}}
+
+/* «Баланс»: выводы ИИ и сигналы дня в одной карточке — подзаголовок между ними */
+.fd-sig-split{margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--bd);font-size:.76rem;font-weight:600;color:var(--mu)}
+.fd-sig-split[hidden]{display:none}

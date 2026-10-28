@@ -1,0 +1,55 @@
+/* Панель помощника. Переменные темы отчёта — светлая/тёмная тема и glassmorphism подхватываются сами. */
+#asb{position:relative}
+#asb.rec{background:var(--neg);color:#fff;border-color:transparent}
+#asb.rec::after{content:"";position:absolute;inset:-4px;border-radius:18px;border:2px solid var(--neg);opacity:.55;animation:aspulse 1.4s ease-out infinite}
+@keyframes aspulse{from{transform:scale(.92);opacity:.6}to{transform:scale(1.18);opacity:0}}
+
+#asp{position:fixed;z-index:42;top:calc(env(safe-area-inset-top,0px) + 70px);bottom:16px;right:max(16px,calc((100vw - 1240px)/2 + 24px));
+  width:min(460px,calc(100vw - 32px));display:flex;flex-direction:column;border-radius:22px;border:1px solid var(--gb);
+  background:color-mix(in srgb,var(--bg) 92%,transparent);box-shadow:0 18px 50px rgba(15,23,42,.24);
+  backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);overflow:hidden}
+#asp[hidden]{display:none}
+.as-head{display:flex;align-items:center;gap:10px;padding:14px 14px 10px 18px;border-bottom:1px solid var(--bd)}
+.as-head h2{margin:0;flex:1}
+.as-head small{display:block;font:400 .74rem Manrope,sans-serif;color:var(--mu);letter-spacing:0;margin-top:2px}
+.as-log{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.as-msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:.9rem;line-height:1.5;word-wrap:break-word}
+.as-msg.u{align-self:flex-end;background:var(--tx);color:var(--bg);border-bottom-right-radius:6px}
+.as-msg.a{align-self:flex-start;background:var(--gl);border:1px solid var(--bd);border-bottom-left-radius:6px}
+.as-msg.a p{margin:0 0 6px}.as-msg.a p:last-child{margin:0}
+.as-msg.a ul{margin:4px 0;padding-left:18px}
+.as-msg.err{border-color:color-mix(in srgb,var(--neg) 45%,transparent)}
+.as-meta{display:flex;gap:10px;align-items:center;margin-top:6px;font-size:.72rem;color:var(--mu)}
+.as-meta button{background:none;border:0;padding:0;min-height:28px;color:var(--ac);font:600 .72rem Manrope,sans-serif;cursor:pointer}
+.as-q{margin-top:6px;font:500 .72rem "IBM Plex Mono",monospace;color:var(--mu);white-space:pre-wrap}
+.as-q[hidden]{display:none}
+.as-typing{display:inline-flex;gap:4px}.as-typing i{width:6px;height:6px;border-radius:50%;background:var(--mu);animation:astyp 1s infinite}
+.as-typing i:nth-child(2){animation-delay:.15s}.as-typing i:nth-child(3){animation-delay:.3s}
+@keyframes astyp{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.as-chips[hidden]{display:none}
+.as-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
+.as-chips button{min-height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:99px;background:var(--gl);color:var(--tx);font:600 .78rem Manrope,sans-serif;cursor:pointer;transition:background-color .15s}
+.as-chips button:hover{background:var(--s2)}
+.as-rec{display:none;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--bd);font-size:.84rem}
+.as-rec.on{display:flex}
+.as-lvl{flex:1;height:8px;border-radius:99px;background:var(--s2);overflow:hidden}
+.as-lvl i{display:block;height:100%;width:0;background:var(--neg);border-radius:99px;transition:width .08s linear}
+.as-form{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--bd)}
+.as-form textarea{flex:1;min-height:44px;max-height:140px;padding:11px 12px;resize:none;overflow-y:hidden;border-radius:14px;font:inherit;font-size:.9rem}
+.as-form .ib{width:44px;height:44px;flex:none}
+.as-form .ib.mic{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.as-form .ib.mic.rec{background:var(--neg);border-color:var(--neg);color:#fff}
+.as-set{border-top:1px solid var(--bd);padding:10px 16px 14px;max-height:52%;overflow:auto}
+.as-set[hidden]{display:none}
+.as-set .cn-row label{flex:1 1 170px}
+.as-note{font-size:.76rem;color:var(--mu);margin:6px 0 0}
+.as-speaking{display:none;align-items:center;gap:8px;padding:6px 16px;font-size:.78rem;color:var(--mu)}
+.as-speaking.on{display:flex}
+.as-speaking button{min-height:32px;padding:0 10px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--tx);font:600 .76rem Manrope,sans-serif;cursor:pointer}
+@media (max-width:780px){#asp{left:16px;right:16px;width:auto;bottom:96px}}
+@media (prefers-reduced-motion:reduce){#asb.rec::after,.as-typing i{animation:none}.as-lvl i{transition:none}}
+
+/* Переключатели настроек помощника — ровным столбцом, подпись сразу справа */
+.as-switches{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin:6px 0}
+.as-switches .cn-prim{display:flex;flex-direction:row;align-items:center;gap:12px;flex:0 0 auto;width:100%;min-height:44px;margin:0;font-size:.84rem;color:var(--tx);text-align:left;cursor:pointer}
+.as-switches .cn-prim input{flex:none}

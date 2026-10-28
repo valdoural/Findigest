@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>pdf</title>
+<!-- Служебная невидимая страница: читает PDF-вложения писем тем же способом, что и отчёт (pdfParts). -->
+<script src="../digest/vendor/pdf.min.js"></script>
+</head>
+<body>
+<script>
+window.renderPdf = async function (b64) {
+  const lib = window.pdfjsLib;
+  lib.GlobalWorkerOptions.workerSrc = '../digest/vendor/pdf.worker.min.js';
+  const bin = atob(b64), data = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) data[i] = bin.charCodeAt(i);
+  const doc = await lib.getDocument({ data }).promise;
+  const pages = []; let text = '';
+  // 1) текстовый слой: строки собираются по координате y
+  for (let i = 1; i <= Math.min(10, doc.numPages); i++) {
+    try {
+      const pg = await doc.getPage(i), tc = await pg.getTextContent(), L = [];
+      tc.items.forEach(it => {
+        if (!it.str || !it.str.trim()) return;
+        const y = it.transform[5], x = it.transform[4];
+        let ln = L.find(l => Math.abs(l.y - y) < 3);
+        if (!ln) { ln = { y, p: [] }; L.push(ln); }
+        if (!ln.p.some(q => Math.abs(q[0] - x) < 2 && q[1] === it.str)) ln.p.push([x, it.str]);
+      });
+      L.sort((a, b) => b.y - a.y).forEach(l => { text += l.p.sort((a, b) => a[0] - b[0]).map(q => q[1]).join(' ').replace(/\s+/g, ' ').trim() + '\n'; });
+    } catch (e) { /* страница без текста */ }
+  }
+  // 2) картинки для сканов: ширина ~900 px, длинные страницы режутся на куски
+  const W = 900, MAXH = 1400;
+  for (let i = 1; i <= Math.min(3, doc.numPages) && pages.length < 8; i++) {
+    const pg = await doc.getPage(i), v1 = pg.getViewport({ scale: 1 }), sc = Math.min(2.5, W / v1.width), vp = pg.getViewport({ scale: sc });
+    const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.min(16000, Math.round(vp.height));
+    const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: cx, viewport: vp }).promise;
+    for (let y = 0; y < c.height && pages.length < 8; y += MAXH - 60) {
+      const h = Math.min(MAXH, c.height - y); if (h < 80) break;
+      const s2 = document.createElement('canvas'); s2.width = c.width; s2.height = h;
+      s2.getContext('2d').drawImage(c, 0, y, c.width, h, 0, 0, c.width, h);
+      pages.push(s2.toDataURL('image/jpeg', 0.72));
+    }
+  }
+  return { pages, total: doc.numPages, text: text.trim() };
+};
+window.shrinkImage = async function (dataUrl, W = 900, q = 0.65) {
+  const img = new Image(); img.src = dataUrl; await img.decode();
+  const k = Math.min(1, W / img.width), c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', q);
+};
+</script>
+</body>
+</html>

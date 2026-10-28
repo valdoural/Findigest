@@ -1,0 +1,119 @@
+/* Панель «Подключения». Использует переменные темы отчёта (--bg, --gl, --tx …), поэтому
+   автоматически следует светлой/тёмной теме и стилю glassmorphism. */
+#cnb{position:relative}
+.cn-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--mu);box-shadow:0 0 0 2px var(--bg);transition:background-color .2s}
+.cn-dot.ok{background:var(--pos)}.cn-dot.warn{background:#D69E2E}.cn-dot.err{background:var(--neg)}
+
+#cnp{position:fixed;margin:0;z-index:41;top:calc(env(safe-area-inset-top,0px) + 70px);overscroll-behavior:contain;right:max(16px,calc((100vw - 1020px)/2 + 16px));
+  width:min(600px,calc(100vw - 32px));max-height:calc(100vh - 96px);overflow:auto;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);border:1px solid var(--gb);border-radius:22px;padding:18px;
+  box-shadow:0 18px 50px rgba(15,23,42,.22);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
+#cnp[hidden]{display:none}
+#cnp h2{margin:0}
+#cnp .cn-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
+#cnp .cn-tabs button{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 13px;border:1px solid var(--bd);border-radius:99px;background:var(--gl);color:var(--tx);font:600 .82rem Manrope,sans-serif;cursor:pointer}
+#cnp .cn-tabs button[aria-selected="true"]{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+#cnp .cn-tabs i{width:8px;height:8px;border-radius:50%;background:var(--mu);opacity:.6}
+#cnp .cn-tabs i.ok{background:var(--pos);opacity:1}#cnp .cn-tabs i.warn{background:#D69E2E;opacity:1}
+#cnp .cn-sec{display:none}#cnp .cn-sec.on{display:block}
+
+.cn-card{border:1px solid var(--bd);border-radius:16px;padding:12px 14px;margin:10px 0;background:var(--gl)}
+.cn-head{display:flex;align-items:center;gap:10px}
+.cn-head .cn-logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;font:700 .8rem Unbounded,Manrope,sans-serif;flex:none}
+.cn-head b{flex:1;min-width:0}
+.cn-head small{display:block;font-weight:400}
+.cn-body{margin-top:8px}
+.cn-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}
+.cn-row label{display:flex;flex-direction:column;gap:3px;font-size:.76rem;color:var(--mu);flex:1 1 180px;min-width:0}
+.cn-row .bn{min-height:44px}
+.cn-key{font-family:"IBM Plex Mono",monospace;font-size:.8rem}
+.cn-msg{margin:8px 0 0;font-size:.8rem;color:var(--mu);min-height:1em}
+.cn-msg.ok{color:var(--pos)}.cn-msg.err{color:var(--neg)}
+.cn-link{background:none;border:0;padding:8px 4px;margin:-8px -4px;color:var(--ac);font:600 .8rem Manrope,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.cn-steps{margin:6px 0 0;padding-left:20px;font-size:.8rem;color:var(--mu)}.cn-steps li{margin:3px 0}
+.cn-prim{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;color:var(--mu);cursor:pointer;min-height:44px}
+.cn-prim input[type=radio]{width:18px;min-width:18px;min-height:18px;accent-color:var(--ac)}
+.cn-snd{display:grid;grid-template-columns:1fr 1.4fr 44px;gap:6px;align-items:center;margin:4px 0}
+.cn-snd input{min-height:44px}
+.cn-snd button{min-width:44px;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--mu);cursor:pointer}
+.cn-snd button:hover{color:var(--neg)}
+.cn-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.8rem;margin:6px 0}.cn-kv span:nth-child(odd){color:var(--mu)}
+.cn-kv code{font:500 .74rem "IBM Plex Mono",monospace;word-break:break-all}
+.cn-apply{display:flex;align-items:center;gap:10px;margin:10px 0 0;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ac) 12%,transparent);font-size:.82rem}
+.cn-apply[hidden]{display:none}
+.cn-apply span{flex:1}
+.cn-snd button:focus-visible,.cn-link:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+@media(max-width:520px){.cn-snd{grid-template-columns:1fr 44px}.cn-snd input:nth-child(2){grid-column:1/2}}
+/* поля отчёта задают input{width:100%;min-width:80px} — для переключателей и радиокнопок это лишнее */
+#cnp .cn-row label.cn-prim{flex-direction:row;flex:0 0 auto;width:auto;font-size:.82rem;color:var(--tx)}
+#cnp .cn-prim input[type=radio]{width:18px;height:18px;min-width:18px;min-height:18px;padding:0;margin:0}
+#cnp{overflow-x:hidden}
+/* иконки вкладок и кнопок шапки — фиксированного размера (общее правило отчёта svg{width:100%} рассчитано на графики) */
+.tabs .ic svg,.top .ib>svg{width:18px;height:18px;flex:none}
+.top .ib>svg{width:20px;height:20px}
+
+@media (max-width:780px){#cnp{right:16px;left:16px;width:auto;max-height:calc(100vh - 190px)}}
+@media (prefers-reduced-motion:reduce){.cn-dot,.cn-tile,.cn-skin{transition:none}}
+/* Вид: карточки вариантов оформления */
+.cn-skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.cn-skin{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:44px;padding:12px;border-radius:16px;border:1px solid var(--bd);background:var(--s2);color:var(--tx);text-align:left;cursor:pointer;font:inherit;transition:border-color .15s,background-color .15s}
+.cn-skin:hover{border-color:color-mix(in srgb,var(--ac) 45%,transparent)}
+.cn-skin[aria-checked="true"]{border:2px solid var(--ac);padding:11px;background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.cn-skin b{font-size:.92rem}.cn-skin small{color:var(--mu);font-size:.76rem;line-height:1.4}
+.cn-swatch{display:flex;gap:4px}.cn-swatch i{width:22px;height:22px;border-radius:7px;box-shadow:inset 0 0 0 1px rgba(15,23,42,.12)}
+.cn-row[hidden]{display:none!important}
+
+/* Подписи переключателей — сразу справа от тумблера, без пустых промежутков */
+.cn-prim{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;min-height:44px;font-size:.82rem;color:var(--tx);cursor:pointer;text-align:left}
+.cn-prim input[type=radio]{width:18px;height:18px;min-width:18px;min-height:18px;margin:0;accent-color:var(--ac)}
+.cn-head{gap:12px}
+.cn-foot{justify-content:space-between;align-items:center;flex-wrap:wrap}
+.cn-foot .cn-prim{width:auto}
+/* «Добавить ИИ»: плитки сервисов по группам */
+.cn-h3{margin:18px 0 2px;font-size:.95rem}
+.cn-gh{margin:12px 0 6px;font-size:.76rem;font-weight:600;color:var(--mu)}
+.cn-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.cn-tile{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border:1px solid var(--bd);border-radius:14px;background:var(--gl);color:var(--tx);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s}
+.cn-tile:hover{border-color:color-mix(in srgb,var(--ac) 45%,var(--bd));background:color-mix(in srgb,var(--ac) 6%,var(--gl))}
+.cn-tile span{display:flex;flex-direction:column;min-width:0}.cn-tile b{font-size:.86rem}.cn-tile small{font-size:.72rem;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cn-tile .cn-logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;font:700 .72rem Manrope,sans-serif;flex:none}
+
+/* пустая раскрытая карточка ИИ: кнопка «Убрать» и эффект удаления */
+.cn-x{flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:var(--mu);cursor:pointer;transition:background-color .15s,color .15s,transform .14s var(--fd-ease-out,ease-out)}
+.cn-x:hover{background:color-mix(in srgb,var(--rd,#d14343) 12%,transparent);color:var(--rd,#d14343)}
+.cn-x:active{transform:scale(.9)}
+.cn-x:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+#cnp .cn-card.cn-new{animation:fdcard-in .24s var(--fd-ease-out,ease-out)}
+@keyframes fdcard-in{from{opacity:0;transform:translateY(-4px) scale(.985)}}
+#cnp .cn-card.cn-gone{overflow:hidden;pointer-events:none;opacity:0;transform:scale(.96) translateX(12px);height:0!important;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;border-width:0;
+  transition:opacity .2s ease-out,transform .24s var(--fd-ease-out,ease-out),height .3s var(--fd-ease-out,ease-out) .08s,padding .3s var(--fd-ease-out,ease-out) .08s,margin .3s var(--fd-ease-out,ease-out) .08s}
+.cn-tile.cn-back{animation:fdpick .34s var(--fd-ease-out,ease-out)}
+@media (prefers-reduced-motion:reduce){#cnp .cn-card.cn-new,.cn-tile.cn-back{animation:none}}
+
+/* «О программе» (desktop/about.js) */
+.ab-hero{display:flex;gap:14px;align-items:center}
+.ab-mark{flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#0ea5e9))}
+.ab-title{font-size:1.1rem}
+.ab-hero .nt{margin:2px 0}
+.ab-author{margin:4px 0 0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ab-author .cn-link{display:inline-flex;align-items:center;gap:6px}
+.ab-state{margin:8px 0 2px}
+.ab-new{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;
+  background:color-mix(in srgb,var(--ac) 10%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent)}
+.ab-ok{margin:0;color:var(--pos)}
+.ab-prog{height:6px;border-radius:999px;background:var(--s2);overflow:hidden;margin:8px 0}
+.ab-prog[hidden]{display:none}
+.ab-prog i{display:block;height:100%;width:0;background:var(--ac);border-radius:inherit;transition:width .2s ease-out}
+.ab-list{list-style:none;margin:8px 0 0;padding:0}
+.ab-list li{padding:10px 0;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.ab-list li:first-child{border-top:0}
+.ab-list details{grid-column:1/-1}
+.ab-v{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.ab-v small{color:var(--mu);width:100%}
+.ab-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ab-chip{font-size:.7rem;padding:2px 8px;border-radius:999px;background:var(--s2);color:var(--mu)}
+.ab-chip.new{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac)}
+.ab-notes{white-space:pre-wrap;font:inherit;font-size:.82rem;color:var(--mu);margin:6px 0 0;max-height:220px;overflow:auto}
+.ab-how summary{cursor:pointer;list-style-position:inside}
+.ab-how ol{padding-left:18px;margin:8px 0}
+.ab-how code{font-size:.8rem;padding:1px 5px;border-radius:6px;background:var(--s2)}
