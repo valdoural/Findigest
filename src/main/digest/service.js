@@ -53,7 +53,7 @@ const mailReady = () => { const m = settings.get().mail; return !!(m.enabled && 
  * Обновить: Zenmoney (синхронизация + пересчёт листов) и почта (новые чеки в архив).
  * only: 'zenmoney' | 'mail' — один источник. Ошибка одного источника не мешает другому.
  */
-async function refresh({ full = false, reason = 'manual', only = null } = {}) {
+async function refresh({ full = false, reason = 'manual', only = null, retry = false } = {}) {
   if (state.running) return status();
   const doZen = (!only || only === 'zenmoney') && zenReady();
   const doMail = (!only || only === 'mail') && mailReady();
@@ -69,7 +69,7 @@ async function refresh({ full = false, reason = 'manual', only = null } = {}) {
     catch (e) { out.errors.push({ source: 'zenmoney', code: e.code || 'error', message: e.message }); }
   }
   if (doMail) {
-    try { out.mail = await require('../connectors/mail').fetchReceipts({ render: require('../tools/render') }); }
+    try { out.mail = await require('../connectors/mail').fetchReceipts({ render: require('../tools/render'), retry }); }
     catch (e) { out.errors.push({ source: 'mail', code: e.code || 'error', message: e.message }); }
   }
   const failedAll = out.errors.length && !out.zen && !out.mail;

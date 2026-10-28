@@ -67,7 +67,7 @@ app.whenReady().then(async () => {
   for (let i = 0; i < 80; i++) { await sleep(250); m = await js(`(document.getElementById('mail-msg')||{}).textContent||''`); if (/добавлено|Новых нет|не удалась|Ошибка/.test(m)) break; }
   console.log('  ', m);
   const after1 = rcp(); console.log('   rcp:', JSON.stringify(after1.map(x => [x.d, x.st, x.n, x.s])));
-  ok(/Новых: 2/.test(m) && /добавлено чеков: 2 \(Лента\)/.test(m), '«Сохранить и проверить почту»: найдены оба чека Ленты (и 20-дневный — новый магазин ищется на всю глубину), разобраны');
+  ok(/добавлено чеков: 2 \(Лента\)/.test(m), '«Сохранить и проверить почту»: найдены оба чека Ленты (и 20-дневный — новый магазин ищется на всю глубину), разобраны');
   ok(after1.filter(x => x.st === 'Лента').length === 3 && after1.some(x => /Сыр российский/.test(x.n) && x.s === 412.5) && after1.every(x => x.s < 1000), `позиции Ленты в «Продуктах» с верными суммами (копейки не склеиваются): ${after1.length}`);
   ok(D.db.prepare("SELECT COUNT(*) n FROM archive WHERE source='mail' AND status='parsed'").get().n === 2 && D.db.prepare('SELECT COUNT(*) n FROM receipt_items').get().n === after1.length, 'в базе: чеки в архиве со статусом «разобран», позиции в receipt_items');
   ok(settings.get().mail.pollMinutes === 15 && settings.get().mail.senders['Лента'] === 'check@lenta.com', 'настройки сохранены: Лента и проверка каждые 15 минут');

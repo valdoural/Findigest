@@ -346,11 +346,20 @@ rep("function askConfirm(text){return new Promise(res=>{const ov=$('cf');$('cfT'
 
 // 8.17 Разбор текста чека без ИИ: «Сыр 1 x 412.50 412.50» читалось как 50 412,50 ₽ — копейки цены склеивались
 // с суммой как разряд тысяч. Число суммы не может начинаться сразу после точки/запятой, разряды тысяч — ровно по 3 цифры.
-rep(String.raw`price=/(\d[\d ]*[.,]\d{2})\s*(?:₽|руб\.?|р\.?)?\s*$/;`, String.raw`price=/(?<![\d.,])((?:\d{1,3}(?: \d{3})+|\d+)[.,]\d{2})\s*(?:₽|руб\.?|р\.?)?\s*$/;`);
+// Сумма целыми рублями со знаком («Сыр 412 ₽», «Итого: 572 руб») — тоже сумма строки.
+rep(String.raw`price=/(\d[\d ]*[.,]\d{2})\s*(?:₽|руб\.?|р\.?)?\s*$/;`, String.raw`price=/(?<![\d.,])((?:\d{1,3}(?: \d{3})+|\d+)(?:[.,]\d{2}|(?=\s*(?:₽|руб))))\s*(?:₽|руб\.?|р\.?)?\s*$/;`);
 
 // 8.18 Подписи осей с малыми суммами: было «1к 1к 1к 0к» — до 10 тыс. с одним знаком, меньше тысячи — рублями
 rep("const K=v=>Math.abs(v)>=1e6?(v/1e6).toFixed(1).replace('.',',')+'м':Math.round(v/1000)+'к';",
   "const K=v=>{const a=Math.abs(v);return a>=1e6?(v/1e6).toFixed(1).replace('.',',')+'м':a>=1e4?Math.round(v/1000)+'к':a>=1e3?(v/1000).toFixed(1).replace('.',',').replace(',0','')+'к':String(Math.round(v))};");
+
+// 8.19 Служебные строки чека: слова — с границей слова («тел» не цепляет «Телевизор», «карт» — «Картофель», «инн» — «Блинная мука»)
+rep(String.raw`const skip=/итог|всего|сумма|ндс|нал|безнал|карт|сдач|скидк|оплат|кассир|смен|фн\b|фд\b|фп\b|инн|чек|приход|рн ккт|зн ккт|сайт|адрес|место|тел|спасибо|бонус|баллы|получено|расчет|расчёт|предмет|версия|код формы|сно|эл\. адрес|аванс|кредит|встречн|№ авт/i`,
+  String.raw`const skip=/(?<![а-яёa-z])(?:итог|всего|сумм[аы]|ндс|нал(?:ичн[а-яё]*)?(?![а-яё])|безнал|карт(?:а|ой|ы|у)?(?![а-яё])|сдач[аи]?(?![а-яё])|скидк|оплат|кассир|смен[аы]?(?![а-яё])|фн(?![а-яё])|фд(?![а-яё])|фп(?![а-яё])|инн(?![а-яё])|чек(?:а|у)?(?![а-яё])|приход|рн ккт|зн ккт|сайт|адрес|место расч|тел(?:\.|ефон)|спасибо|бонус|балл(?:ы|ов)?(?![а-яё])|получено|расч[её]т|предмет расч|версия|код формы|сно(?![а-яё])|эл\. адрес|аванс|кредит(?![а-яё])|встречн|№ авт)/i`);
+
+// 8.20 Итог чека — и целыми рублями («Итого: 572 ₽»)
+rep(String.raw`const tm=String(text).match(/итог[^\d\n]{0,20}(\d[\d ]*[.,]\d{2})/i);`,
+  String.raw`const tm=String(text).match(/итог[^\d\n]{0,20}(\d[\d ]*[.,]\d{2}|\d[\d ]*(?=\s*(?:₽|руб)))/i);`);
 
 // 9. Доступ модулей программы (импорт таблиц и др.) к данным отчёта: основной скрипт — асинхронная функция,
 //    его переменные снаружи не видны, поэтому в её конце публикуется небольшой интерфейс window.FD_PAGE.
@@ -365,8 +374,8 @@ window.FD_PAGE={get IT(){return IT},set IT(v){IT=v},get RCP(){return RCP},set RC
    const want=ids&&ids.length?new Set(ids):null,list=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed'&&(want?want.has(e.id):e.status==='new'));
    if(list.length&&!(opts&&opts.noParse))await parseReceipts(list);
    return list.map(e=>{const a=ARC[e.id]||e;return {id:a.id,store:a.store||a.mstore||'',date:a.date||a.maildate||'',total:a.total||null,items:a.items||0,status:a.status,err:a.err||null}})},
-  // чеки, где сумма позиций больше итога чека (следствие старой ошибки разбора копеек) — разобрать заново
-  recheckParsed:async()=>{const bad=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.status==='parsed'&&e.text&&+e.total>0&&RCP.filter(x=>x.src===e.id).reduce((a,x)=>a+(+x.s||0),0)>e.total*1.05+1);if(bad.length)await parseReceipts(bad);return bad.length},
+  // чеки, где сумма позиций расходится с итогом больше чем на 5% (старые ошибки разбора: копейки, пропущенные строки) — разобрать заново
+  recheckParsed:async()=>{const bad=Object.values(ARC).filter(e=>{if(e.kind!=='receipt'||e.status!=='parsed'||!e.text||!(+e.total>0))return false;const sum=RCP.filter(x=>x.src===e.id).reduce((a,x)=>a+(+x.s||0),0);return Math.abs(sum-e.total)>e.total*0.05+1});if(bad.length)await parseReceipts(bad);return bad.length},
   get pendingMail(){return Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed').map(e=>e.id)}};
 window.dispatchEvent(new Event('fd-page'));` + s.slice(b);
 }

@@ -9,9 +9,25 @@
  */
 const crypto = require('crypto');
 
-const RECEIPT_WORDS = /(кассов\w* чек|электронн\w* чек|чек\b|итог|итого|к оплате|сумма|ФН\b|ФД\b|ФП\b|фискальн|ОФД|приход)/i;
-const MONEY = /\d[\d\s]*[.,]\d{2}\b/;
+// \b в JavaScript не видит границ русских слов — границы заданы явно
+const NL = '(?<![А-Яа-яЁёA-Za-z])', NR = '(?![А-Яа-яЁёA-Za-z])';
+const RECEIPT_WORDS = new RegExp(`(кассов[а-яё]* чек|электронн[а-яё]* чек|итог|к оплате|фискальн|ОФД|приход|${NL}(?:ФН|ФД|ФП|ККТ)${NR}|${NL}чек${NR})`, 'i');
+// сумма с копейками («1 234,56») или целыми рублями со знаком («1 234 ₽», «599 руб»)
+const MONEY = /\d[\d\s ]*[.,]\d{2}(?!\d)|\d{1,3}(?:[\s ]\d{3})*\s?(?:₽|руб)/;
 const looksLikeReceipt = t => !!t && RECEIPT_WORDS.test(t) && MONEY.test(t);
+// письмо от магазина из списка, где упоминается чек или покупка (рекламу без этих слов не берём)
+const STORE_HINT = new RegExp(`${NL}(чек|покупк[а-яё]*|заказ[а-яё]*|оплат[а-яё]*)${NR}`, 'i');
+// ссылки на чек на сайте ОФД / ФНС — открываем и берём чек оттуда
+const RECEIPT_LINK = /(ofd|nalog\.gov\.ru|taxcom|platformaofd|1-ofd|ofd-ya|kontur|sbis|check|receipt|cheque|чек)/i;
+function receiptLinks(html) {
+  const out = [];
+  for (const m of String(html || '').matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const url = m[1].replace(/&amp;/g, '&'), label = htmlToText(m[2]);
+    if (!/^https?:\/\//i.test(url)) continue;
+    if (RECEIPT_LINK.test(url) || /чек/i.test(label)) out.push(url);
+  }
+  return [...new Set(out)].slice(0, 3);
+}
 
 function htmlToText(html) {
   return String(html)
@@ -32,7 +48,7 @@ const isoDay = d => { const x = d instanceof Date ? d : new Date(d); return isNa
  * @param opts    { key, store, render: {pdf(buf), image(buf,mime)} }
  * @returns       { entries: [...], note }
  */
-async function extract(parsed, { key, store = '', render }) {
+async function extract(parsed, { key, store = '', render, fetchText, fromStore = false }) {
   const subject = (parsed.subject || '').trim();
   const from = ((parsed.from && parsed.from.value && parsed.from.value[0]) || {}).address || '';
   const maildate = isoDay(parsed.date || new Date());
@@ -74,9 +90,24 @@ async function extract(parsed, { key, store = '', render }) {
   if (!entries.length) {
     const t = parsed.html ? htmlToText(parsed.html) : (parsed.text || '');
     if (looksLikeReceipt(t)) { const e = base('body', subject); e.text = t.slice(0, 20000); entries.push(e); }
-    else notes.push('в письме нет чека');
+    else {
+      // чек только по ссылке («Посмотреть чек») — открываем страницу ОФД
+      for (const url of fetchText ? receiptLinks(parsed.html) : []) {
+        try {
+          const page = await fetchText(url);
+          const pt = /<\w/.test(page) ? htmlToText(page) : page;
+          if (looksLikeReceipt(pt)) { const e = base('link', subject); e.text = pt.slice(0, 20000); e.link = url; entries.push(e); notes.push('чек по ссылке'); break; }
+        } catch (x) { notes.push('ссылка на чек не открылась: ' + x.message); }
+      }
+      // письмо от магазина из списка про чек/покупку — в архив, его разберёт ИИ (лучше лишнее письмо, чем потерянный чек)
+      if (!entries.length && fromStore && (STORE_HINT.test(subject) || STORE_HINT.test(t)) && MONEY.test(subject + '\n' + t)) {
+        const e = base('body', subject); e.text = t.slice(0, 20000); e.unsure = true; entries.push(e);
+        notes.push('письмо магазина не похоже на стандартный чек — сохранено для разбора');
+      }
+      if (!entries.length) notes.push(fromStore ? `в письме не найден чек${t.length < 15 ? ' (в письме почти нет текста — возможно, чек картинкой)' : ''}` : 'в письме нет чека');
+    }
   }
   return { entries, note: notes.join('; '), from, subject, maildate };
 }
 
-module.exports = { extract, htmlToText, looksLikeReceipt };
+module.exports = { extract, htmlToText, looksLikeReceipt, receiptLinks };

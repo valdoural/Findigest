@@ -341,24 +341,32 @@
         S = await N.conn.setMail(patch);
         const p = $('mail-pass').value; if (p) S = await N.conn.setSecret('mail_password', p);
         const mm = $('mail-msg');
-        // одна кнопка на весь путь: вход → новые чеки в архив → разбор → покупки в «Продукты»
-        const t0 = await act(mm, () => N.conn.test('mail'), x => `Подключено. Чеков от ваших магазинов за 90 дней: ${x.receipts90d}. Загружаю новые…`);
+        // одна кнопка на весь путь: вход → чеки в архив (письма без чека и удалённые из архива — перечитать) → разбор → «Продукты»
+        const t0 = await act(mm, () => N.conn.test('mail'), x => `Подключено. Писем от ваших магазинов за 90 дней: ${x.receipts90d}. Загружаю и разбираю…`);
         if (!t0) return;
-        let line = mm.textContent.replace(' Загружаю новые…', '');
+        const dm = d => (d ? new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : '');
+        const who = l => `${l.shop || l.from || 'письмо'}${l.date ? ' ' + dm(l.date) : ''}${l.subject ? ` («${l.subject.slice(0, 40)}»)` : ''}`;
+        const lines = [`Подключено. Писем от ваших магазинов за 90 дней: ${t0.receipts90d}.`];
         try {
-          const st = await N.digest.refresh({ only: 'mail' });
-          const lr = st.lastRun || {}, ids = (lr.mail && lr.mail.ids) || [];
+          const st = await N.digest.refresh({ only: 'mail', retry: true });
+          const lr = st.lastRun || {}, mr = lr.mail || {}, ids = mr.ids || [];
           const err = (lr.errors || []).find(x => x.source === 'mail');
           if (err) throw Object.assign(new Error(err.message), { code: err.code });
-          if (!ids.length) line += ' Новых нет — все уже в архиве.';
-          else {
-            msg(mm, line + ` Новых: ${ids.length}, разбираю…`);
+          if (ids.length) {
+            msg(mm, lines[0] + ` Найдено чеков: ${ids.length}, разбираю…`);
             const list = window.FD_mailIngest ? await window.FD_mailIngest(ids, { quietIfNone: true }) : [];
-            const ok = list.filter(x => x.status === 'parsed');
-            line += ` Новых: ${ids.length}` + (ok.length ? `, в «Продукты» добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store || 'магазин'))].join(', ')}).` : '. Они в архиве чеков — разбор фото и сканов требует ИИ.');
+            const ok = list.filter(x => x.status === 'parsed'), bad = list.filter(x => x.status !== 'parsed');
+            if (ok.length) lines.push(`В «Продукты» добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store || 'магазин'))].join(', ')}).`);
+            if (bad.length) lines.push(`В архиве, но не разобрано: ${bad.length}${bad[0].err ? ' — ' + bad[0].err : ''}.`);
           }
-          S = await N.conn.status(); renderMail(); paintStatus(); msg($('mail-msg'), line, 'ok');
-        } catch (x) { S = await N.conn.status(); renderMail(); paintStatus(); msg($('mail-msg'), line + ' Загрузка не удалась: ' + errText(x), 'err'); }
+          // письма, из которых чек не получился, — с причиной
+          for (const l of (mr.letters || []).filter(x => x.status !== 'imported').slice(0, 4)) lines.push(`${who(l)}: ${l.note || 'чек не найден'}.`);
+          // письма, которые уже были в архиве раньше
+          const before = (t0.letters || []).filter(l => l.status === 'imported').length;
+          if (!ids.length && !(mr.letters || []).length) lines.push(before ? `Новых нет — найденные письма уже в архиве чеков (${before}).` : 'Новых писем с чеками нет.');
+          S = await N.conn.status(); renderMail(); paintStatus();
+          msg($('mail-msg'), lines.join(' '), (mr.letters || []).some(l => l.status !== 'imported') && !ids.length ? 'err' : 'ok');
+        } catch (x) { S = await N.conn.status(); renderMail(); paintStatus(); msg($('mail-msg'), lines.join(' ') + ' Загрузка не удалась: ' + errText(x), 'err'); }
       }
     };
     el.onchange = async e => {

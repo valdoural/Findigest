@@ -141,7 +141,7 @@ function registerDigest(hooks) {
   const service = require('./digest/service');
   const scheduler = require('./scheduler');
   handle('digest:data', () => service.get());
-  handle('digest:refresh', opts => service.refresh({ full: !!(opts && opts.full), reason: 'manual', only: opts && opts.only }));
+  handle('digest:refresh', opts => service.refresh({ full: !!(opts && opts.full), reason: 'manual', only: opts && opts.only, retry: !!(opts && opts.retry) }));
   handle('digest:status', () => ({ ...service.status(), schedule: scheduler.describe(), app: settings.get().app }));
   handle('schedule:set', patch => {
     const cur = settings.get().schedule;

@@ -68,8 +68,10 @@
       const after = await N.digest.refresh();
       const lr = after.lastRun || {}, zc = (lr.changed || 0) + (lr.deleted || 0);
       const errs0 = lr.errors || [];
-      // изменились только чеки в почте — разбираем на месте, без перезагрузки
-      if (!zc && !errs0.length) { manual = false; refreshStatus(); const ids = (lr.mail && lr.mail.ids) || []; if (ids.length) return ingestMail(ids); return say('Данные проверены — нового нет.'); }
+      // нажали «Обновить» — отчёт перезагружается всегда: свежие даты обновления на всех листах (Zenmoney, почта, ЖКХ);
+      // новые чеки из почты разберутся сразу после перезагрузки; итог — в подсказке
+      const ids0 = (lr.mail && lr.mail.ids) || [];
+      sessionStorage.setItem('fd_toast_ok', (zc ? `Zenmoney: изменений ${zc}. ` : 'Zenmoney: без изменений. ') + (lr.mail ? (ids0.length ? `Почта: новых чеков ${ids0.length}.` : 'Почта: новых чеков нет.') : ''));
       if (after.mail && after.mail.pending && after.mail.autoParse) sessionStorage.setItem('fd_autoparse', '1');
       const errs = (after.lastRun && after.lastRun.errors) || [];
       if (errs.length) sessionStorage.setItem('fd_toast', 'Не всё обновилось: ' + errs.map(e => (e.source === 'mail' ? 'почта' : 'Zenmoney') + ' — ' + e.message).join('; '));
@@ -146,16 +148,18 @@
   (async () => {
     const t = sessionStorage.getItem('fd_toast');
     if (t) { sessionStorage.removeItem('fd_toast'); say(t, { err: true, sticky: true }); }
+    const t2 = sessionStorage.getItem('fd_toast_ok');
+    if (t2 && !t) { sessionStorage.removeItem('fd_toast_ok'); say('Обновлено. ' + t2); }
     const st = await N.digest.status().catch(() => null);
     sessionStorage.removeItem('fd_autoparse');
-    // один раз: перепроверить разобранные чеки, где сумма позиций больше итога (старая ошибка чтения копеек)
+    // один раз: перепроверить разобранные чеки, где сумма позиций не сходится с итогом (старые ошибки разбора)
     try {
-      let done = false; try { done = localStorage.getItem('fd_kopfix') === '1'; } catch (_) { /* нет хранилища */ }
+      let done = false; try { done = localStorage.getItem('fd_kopfix2') === '1'; } catch (_) { /* нет хранилища */ }
       if (!done) {
         for (let i = 0; i < 120 && !(window.FD_PAGE && window.FD_PAGE.recheckParsed); i++) await new Promise(r => setTimeout(r, 250));
         const n = window.FD_PAGE && window.FD_PAGE.recheckParsed ? await window.FD_PAGE.recheckParsed() : 0;
-        try { localStorage.setItem('fd_kopfix', '1'); } catch (_) { /* нет хранилища */ }
-        if (n) say(`Исправлены суммы в чеках: ${n} — копейки раньше читались как тысячи.`, { sticky: true, action: { label: 'Показать', run: () => { toast.hidden = true; showReceipts([]); } } });
+        try { localStorage.setItem('fd_kopfix2', '1'); } catch (_) { /* нет хранилища */ }
+        if (n) say(`Чеки разобраны заново: ${n} — сумма позиций не сходилась с итогом (копейки читались как тысячи или строки пропускались).`, { sticky: true, action: { label: 'Показать', run: () => { toast.hidden = true; showReceipts([]); } } });
       }
     } catch (_) { /* проверка необязательна */ }
     if (!st || !st.mail || !st.mail.pending) return;
