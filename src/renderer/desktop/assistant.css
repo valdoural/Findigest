@@ -33,7 +33,7 @@
 .as-rec{display:none;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--bd);font-size:.84rem}
 .as-rec.on{display:flex}
 .as-lvl{flex:1;height:8px;border-radius:99px;background:var(--s2);overflow:hidden}
-.as-lvl i{display:block;height:100%;width:0;background:var(--neg);border-radius:99px;transition:width .08s linear}
+.as-lvl i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--neg);border-radius:99px;transition:transform .08s linear}
 .as-form{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--bd)}
 .as-form textarea{flex:1;min-height:44px;max-height:140px;padding:11px 12px;resize:none;overflow-y:hidden;border-radius:14px;font:inherit;font-size:.9rem}
 .as-form .ib{width:44px;height:44px;flex:none}

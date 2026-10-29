@@ -343,7 +343,7 @@ const NOW=new Date();const NUM=v=>{const t=String(v==null?'':v).replace(/[\s\u00
 const KEYS=['par','goals4','it','rcp','rules','vl','pe','ck','shops'];
 const CACHE={},DB={ok:false,col:null},QQ={};let DLC=null;
 const CG=(k,d)=>(CACHE[k]!=null?CACHE[k]:d);
-function CS(k,v){const t=Date.now();CACHE[k]=v;LS.s(k,v);LS.s('_ts_'+k,t);if(!DB.ok)return Promise.resolve('local');const p=(QQ[k]||Promise.resolve()).then(()=>Promise.race([DB.col.doc(k).set({v:v,t:t}).then(()=>DB.col.doc(k).get()).then(g=>(g&&g.exists&&g.data()&&g.data().t===t)?'db':'unverified'),new Promise(r=>setTimeout(()=>r('timeout'),8000))])).catch(()=>'error');QQ[k]=p;return p}
+function CS(k,v){if(k==='rcp'&&Array.isArray(v)&&v.some(x=>x&&x.demo)){v=v.filter(x=>!(x&&x.demo));if(v.length){try{RCP=v}catch(_){}}}const t=Date.now();CACHE[k]=v;LS.s(k,v);LS.s('_ts_'+k,t);if(!DB.ok)return Promise.resolve('local');const p=(QQ[k]||Promise.resolve()).then(()=>Promise.race([DB.col.doc(k).set({v:v,t:t}).then(()=>DB.col.doc(k).get()).then(g=>(g&&g.exists&&g.data()&&g.data().t===t)?'db':'unverified'),new Promise(r=>setTimeout(()=>r('timeout'),8000))])).catch(()=>'error');QQ[k]=p;return p}
 async function boot(){
  try{const c=window.claude;if(c&&c.use){const [db,u,dl]=await Promise.all([c.use('db'),c.use('user'),c.use('downloads')]);DLC=dl||null;if(db&&u){const id=await u.id();if(id){DB.col=db.collection('data/users/'+id);DB.ok=true}}}}catch(e){}
  for(const k of KEYS){let dv=null,dt=0;if(DB.ok){try{const s=await Promise.race([DB.col.doc(k).get(),new Promise(r=>setTimeout(()=>r(null),6000))]);if(s&&s.exists){const d=s.data();if(d&&d.v!=null){dv=d.v;dt=d.t||0}}}catch(e){}}
@@ -869,7 +869,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 let RECHECK_LOG=[];
 
 function gapReport(){const have=new Set(IT.filter(x=>x.t==='УК').map(x=>x.p));const yr=MONTHS.filter(p=>p.indexOf('2026')===0&&p<=LASTM).sort();const miss=yr.filter(p=>!have.has(p));
- return {miss,msg:miss.length?`В 2026 не хватает квитанций УК за: ${miss.map(mLabel).join(', ')}. Загрузите их или отметьте, что квитанции не было.`:'Пробелов по УК в 2026 нет.'}}
+ const noArc=typeof ARC==='object'&&!Object.values(ARC).some(e=>e&&e.kind!=='receipt');if(noArc)return {miss:[],msg:'Пока пример по условной квитанции. Загрузите свои квитанции — здесь появится проверка, за какие месяцы их не хватает.'};return {miss,msg:miss.length?`В 2026 не хватает квитанций УК за: ${miss.map(mLabel).join(', ')}. Загрузите их или отметьте, что квитанции не было.`:'Пробелов по УК в 2026 нет.'}}
 function completeness(){const out=[];['УК','ЭСК'].forEach(t=>{const ps=[...new Set(IT.filter(x=>x.t===t).map(x=>x.p))].sort();if(ps.length<2)return;const names=p=>new Set(IT.filter(x=>x.t===t&&x.p===p).map(x=>x.n));const cnt={};ps.forEach(p=>names(p).forEach(n=>cnt[n]=(cnt[n]||0)+1));const typical=Object.keys(cnt).filter(n=>cnt[n]>=Math.ceil(ps.length/2));ps.forEach(p=>{const have=names(p),miss=typical.filter(n=>!have.has(n));if(miss.length)out.push({t,p,miss})})});return out}
 function renderChecks(){const g=gapReport();const ps=[...new Set(IT.filter(x=>x.t==='УК').map(x=>x.p))];const cmp=completeness();
  let h=`<p class="sig${g.miss.length?'':' g'}">${esc(g.msg)}</p>`;
@@ -964,6 +964,13 @@ const hIdx=items=>{let T=0,H=0,L=0;items.forEach(x=>{T+=x.s;const g=classify(x.n
 const hLab=v=>v==null?'—':v>=70?'высокий':v>=40?'средний':'низкий';
 $('rg').innerHTML=GN.map(g=>`<option>${g}</option>`).join('');
 let RCP=CG('rcp',[]),RL=CG('rules',[]);
+function demoRcp(){const L=[['Овощи и фрукты',['Яблоки 1 кг',129],['Бананы',99],['Огурцы',149],['Томаты',189]],['Мясо, птица, рыба',['Филе курицы',389],['Фарш говяжий',459],['Минтай',279]],['Молочные продукты',['Молоко 3,2%',95],['Творог 5%',149],['Сыр',329],['Кефир',89]],['Крупы, хлеб, макароны',['Хлеб',59],['Гречка',109],['Макароны',89]],['Сладости и снеки',['Шоколад',119],['Печенье',99]],['Бытовое и прочее',['Средство для посуды',189],['Бумажные полотенца',149]],['Готовая еда и полуфабрикаты',['Пельмени',349]],['Выпечка',['Круассан',79]]];
+ const shops=['Магазин у дома','Супермаркет','Гипермаркет'];let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;const out=[],p2=v=>String(v).padStart(2,'0');
+ for(let mo=3;mo>=0;mo--){const b=new Date(NOW.getFullYear(),NOW.getMonth()-mo,1),days=mo?new Date(b.getFullYear(),b.getMonth()+1,0).getDate():NOW.getDate();
+  for(let d=1;d<=days;d+=2+Math.floor(rnd()*3)){const dt=b.getFullYear()+'-'+p2(b.getMonth()+1)+'-'+p2(d),st=shops[Math.floor(rnd()*shops.length)],rid='demo|'+dt,n=2+Math.floor(rnd()*4);
+   for(let k=0;k<n;k++){const g=L[Math.floor(rnd()*L.length)],it=g[1+Math.floor(rnd()*(g.length-1))];out.push({d:dt,st,n:it[0],s:Math.round(it[1]*(0.9+rnd()*0.3)),g:g[0],rid,src:rid,demo:1})}}}
+ return out}
+const RCP_DEMO=!RCP.length&&!FDM;if(RCP_DEMO)RCP=demoRcp();
 const KWG=[[/(^|[^а-яё])корм/,'Питомец'],[/(^|[^а-яё])(булоч|пирожк|пирож(?!н)|самс|чебурек|эчпочмак|круассан|ватрушк|рогалик|слойк|пончик|беляш|штрудел|выпечк|сло[её]н[а-яё]* тест)/,'Выпечка'],[/(^|[^а-яё])(пиво|вино(?!град)|водк|коньяк|виски|сидр|ликёр|ликер|джин|бренди|текил)|шампанск|игрист|слабоалк/,'Алкоголь'],[/(^|[^а-яё])нап\.|напит|лимонад|газиров|(^|[^а-яё])кола|cola|pepsi|фанта|спрайт|энергет|холодн.*чай|чай.*пэт|(^|[^а-яё])сок(^|[^а-яё]|$)|нектар|морс/,'Сладкие напитки'],[/чипс|сухарик|шарики кук|кукуруз.*палоч|попкорн|жев\.|жеват|шоколад|конфет|батончик|мармелад|печенье|вафл/,'Сладости и снеки'],[/колб|сосиск|сардел|сервел|серв\.|ветчин|хамон|окорок|шинка|бекон|копчён|копчен|буженин|салями|пепперон|мортадел|карбонад|грудинк|шпик|балык|шпикачк|франкфурт|хот-?дог|чоризо|кабаносс|люнчмит|паштет|рилет|котлет|фрикадел|наггетс|холодец|студень|зельц|ростбиф|шейка бар/,'Колбасы и копчёности'],[/консерв|тушён|тушен|шпрот|сайр|килька|сардин|ж\/б|горошек/,'Консервы'],[/(^|\s)вода(\s|$)/,'Бытовое и прочее']];
 const classify=(n,g)=>{const l=String(n).toLowerCase();for(const r of RL)if(l.includes(r[0]))return r[1];for(const[k,c] of KWG)if(k.test(l))return c;return GN.includes(g)?g:'Бытовое и прочее'};
 RCP.forEach(x=>{x.g=classify(x.n,x.g)});CS('rcp',RCP);
@@ -1026,7 +1033,7 @@ function sRefresh(){const t=stTx();const mo=stMonth(),pm=shiftM(mo,-1),py=shiftM
  FYP=FMSH.map((_,i)=>{const q=(+mo.slice(0,4)-1)+'-'+('0'+(i+1)).slice(-2);return RCP.some(x=>ymOf(x)===q)?monTot(q):null});
  if(!SV){SV=dailyView({svg:$('sd'),cats:$('sg'),kp:$('skp'),dd:$('sdd'),names:GN,bud:FB,tx:t.tx,last:Math.max(1,t.last),dots:true,len:31,get mn(){return FMS[+stMonth().slice(5)-1]||''},cmp:FCMP,excl:()=>false,catView:foodCatView,kpf:(di,tot)=>sKpi(di,tot),info:(nm,di,m,tot)=>{const el=$('sphov');if(!el)return;if(!nm){el.textContent='';return}const v=m[nm]||0,mn=MN[+stMonth().slice(5)-1]||'';el.textContent='Вклад «'+nm+'» на '+(di+1)+' '+mn+': '+N(v)+' ₽ — '+(tot?Math.round(v/tot*100):0)+'% накопленных трат ('+N(tot||0)+' ₽).'}})}else SV.upd(t.tx,Math.max(1,t.last));
  applyFoodView();
- $('sdn').textContent=RCP.length?'Данные из загруженных чеков за '+(MN[+stMonth().slice(5)-1]||'')+' '+stMonth().slice(0,4)+'. '+dbNote():'Данных нет: загрузите чеки или нажмите «Показать пример». '+dbNote();
+ $('sdn').textContent=RCP.length&&RCP[0].demo?'Условный пример: так будут выглядеть ваши траты, когда появятся чеки — из почты, фото или файлов. '+dbNote():RCP.length?'Данные из загруженных чеков за '+(MN[+stMonth().slice(5)-1]||'')+' '+stMonth().slice(0,4)+'. '+dbNote():'Чеков пока нет: подключите почту с чеками или загрузите фото и файлы ниже. '+dbNote();
  const h=hIdx(RCP);$('hi').innerHTML=h?healthHTML(h):'<p class="nt">Чеков пока нет.</p>';
  const byR={};RCP.forEach(x=>{const k=x.d+'|'+x.st;(byR[k]=byR[k]||[]).push(x)});
  $('hrt').innerHTML=Object.keys(byR).sort().map(k=>{const hh=hIdx(byR[k]);return `<tr class="${hh?(hh.idx>=70?'ih-hi':hh.idx<40?'ih-lo':''):''}"><td>${k.replace('|',' · ')}</td><td class="amt">${N(byR[k].reduce((s,x)=>s+x.s,0))} ₽</td><td class="amt">${hh?hh.idx+' · '+hLab(hh.idx):'—'}</td></tr>`}).join('')||'<tr><td colspan="3" class="nt">Нет чеков.</td></tr>';
@@ -1120,7 +1127,7 @@ function askConfirm(text,ok){return new Promise(res=>{const ov=$('cf');$('cfT').
 window.FD_PAGE={get IT(){return IT},set IT(v){IT=v},get RCP(){return RCP},set RCP(v){RCP=v},CS,CG,renderAll,sRefresh,askConfirm,addFiles,loadXlsx,
   // новые чеки из почты: перечитать архив из базы и разобрать без перезагрузки страницы (desktop/refresh.js, connections.js)
   ingestMail:async(ids,opts)=>{for(let i=0;JOB.on&&i<240;i++)await new Promise(r=>setTimeout(r,500));await arcLoad();renderReceiptArchive();
-   const want=ids&&ids.length?new Set(ids):null,list=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed'&&(want?want.has(e.id):e.status==='new'));
+   const want=ids&&ids.length?new Set(ids):null,list=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed'&&(want?want.has(e.id):(e.status==='new'||(opts&&opts.retry&&e.status==='error'))));
    if(list.length&&!(opts&&opts.noParse))await parseReceipts(list);
    return list.map(e=>{const a=ARC[e.id]||e;return {id:a.id,store:a.store||a.mstore||'',date:a.date||a.maildate||'',total:a.total||null,items:a.items||0,status:a.status,err:a.err||null}})},
   // чеки, где сумма позиций расходится с итогом больше чем на 5% (старые ошибки разбора: копейки, пропущенные строки) — разобрать заново

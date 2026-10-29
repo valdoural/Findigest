@@ -43,7 +43,7 @@ app.whenReady().then(async () => {
     users: { 'me@mail.ru': { password: 'p' } }, storage: { INBOX: { messages: msgs } } });
   await new Promise(r => server.listen(11145, r));
   settings.patch('mail', { enabled: true, provider: 'custom', user: 'me@mail.ru', host: '127.0.0.1', port: 11145, secure: false, depthDays: 90, subjectSearch: false,
-    senders: { 'Лента': 'check@lenta.com' }, lastCheck: new Date().toISOString(), extractV: 2 });
+    senders: { 'Лента': 'check@lenta.com' }, lastCheck: new Date().toISOString(), extractV: require('../src/main/connectors/mail').EXTRACT_V });
   await secrets.set('mail_password', 'p');
   // как у пользователя: письма уже были проверены старой версией и помечены «в письме нет чека»
   const mark = D.db.prepare('INSERT INTO mail_seen(key,folder,uid,date,from_addr,subject,archive_ids,status,note,created) VALUES(?,?,?,?,?,?,?,?,?,?)');

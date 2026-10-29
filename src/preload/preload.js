@@ -72,7 +72,7 @@ contextBridge.exposeInMainWorld('fdNative', {
   assistant: {
     ask: q => call('assistant:ask', q),
     transcribe: (audio, reqId) => call('assistant:transcribe', { audio, reqId }),
-    speak: text => call('assistant:speak', text),
+    speak: text => call('assistant:speak', text), speechText: t => call('assistant:speechText', t),
     history: () => call('assistant:history'),
     clear: () => call('assistant:clear'),
     info: () => call('assistant:info'),

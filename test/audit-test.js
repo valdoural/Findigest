@@ -52,6 +52,15 @@ app.whenReady().then(async () => {
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space', modifiers: ['control', 'shift'] }); await sleep(30);
     const inst = await js(`(()=>{const p=document.getElementById('asp');return !p.hidden&&getComputedStyle(p).opacity==='1'})()`);
     ok(inst, 'Ctrl+Shift+Пробел открывает помощника сразу, без проявления');
+    // подсказки не затирают друг друга (ask-sonner): важная с кнопкой остаётся, обычная ждёт очереди
+    await js(`document.querySelector('.fd-toast').hidden = true`); await sleep(200);
+    await js(`window.FD_toast('Новый чек из почты: Лента', { sticky: true, action: { label: 'Показать', run: () => {} } }); window.FD_toast('Zenmoney обновлён')`); await sleep(200);
+    const q1 = await js(`document.querySelector('.fd-toast').textContent`);
+    await js(`document.querySelector('.fd-toast').hidden = true`); await sleep(400);
+    const q2 = await js(`(()=>{const t=document.querySelector('.fd-toast');return t.hidden?'':t.textContent})()`);
+    ok(/Новый чек/.test(q1) && /Zenmoney обновлён/.test(q2), 'обычная подсказка не затирает «Новый чек» и появляется после его закрытия');
+    // карточки без размытия подложки (animation-performance), шапка — с размытием
+    ok(await js(`getComputedStyle(document.querySelector('.c')).backdropFilter === 'none'`), 'у карточек нет backdrop-filter — прокрутка без пересчёта размытия');
     ok(!errors.length, 'ошибок нет' + (errors.length ? ': ' + errors.join(' | ') : ''));
   } catch (e) { console.error(e); process.exitCode = 1; }
   app.exit(process.exitCode || 0);

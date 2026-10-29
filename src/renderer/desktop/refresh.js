@@ -27,8 +27,17 @@
   const toast = document.createElement('div');
   toast.className = 'fd-toast'; toast.hidden = true; toast.setAttribute('role', 'status'); toast.setAttribute('aria-live', 'polite');
   document.body.appendChild(toast);
-  let tt = null;
-  function say(text, { action, err, sticky } = {}) {
+  let tt = null, cur = null;
+  // подсказки не затирают друг друга: пока видна важная (с кнопкой и без автоскрытия — «Новый чек», «Доступна версия»),
+  // обычная ждёт своей очереди и появится, когда важную закроют
+  const queue = [];
+  new MutationObserver(() => { if (toast.hidden) { cur = null; const n = queue.shift(); if (n) setTimeout(() => say(n[0], n[1]), 120); } })
+    .observe(toast, { attributes: true, attributeFilter: ['hidden'] });
+  function say(text, opts = {}) {
+    const { action, err, sticky } = opts;
+    if (cur && !toast.hidden && cur.sticky && cur.action && !(sticky && action)) { if (!queue.some(q => q[0] === text)) queue.push([text, opts]); return; }
+    if (cur && !toast.hidden && cur.sticky && cur.action && sticky && action && cur.text !== text) queue.unshift([cur.text, cur.opts]);
+    cur = { text, opts, sticky: !!sticky, action: !!action };
     clearTimeout(tt);
     toast.className = 'fd-toast' + (err ? ' err' : '');
     toast.innerHTML = '';

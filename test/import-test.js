@@ -75,7 +75,7 @@ app.whenReady().then(async () => {
     // подтверждение отвечаем «да» и запоминаем текст
     await js(`window.__asked=[];FD_PAGE.askConfirm=async m=>{window.__asked.push(m);return true};0`);
     const put = (id, names) => js(`(()=>{const dt=new DataTransfer();${names.map(n => `dt.items.add(new File([Uint8Array.from(atob('${files[n].toString('base64')}'),c=>c.charCodeAt(0))],'${n}'));`).join('')}const el=document.getElementById('${id}');el.files=dt.files;el.dispatchEvent(new Event('change',{bubbles:true}))})()`);
-    const st = () => js(`({it:FD_PAGE.IT.length,rcp:FD_PAGE.RCP.length,xm:document.getElementById('xm').textContent,xm2:document.getElementById('xm2').textContent,xm3:document.getElementById('xm3').textContent})`);
+    const st = () => js(`({it:FD_PAGE.IT.length,rcp:FD_PAGE.RCP.filter(x=>!x.demo).length,xm:document.getElementById('xm').textContent,xm2:document.getElementById('xm2').textContent,xm3:document.getElementById('xm3').textContent})`);
     const ui = await js(`({acc:document.getElementById('imp').accept,hint:document.querySelector('#imp + .fb span').textContent,b:!!document.getElementById('fd-bimp'),sf:document.getElementById('sf').accept})`);
     ok(/\.csv/.test(ui.acc) && /\.xlsx/.test(ui.acc) && /\.json/.test(ui.acc) && /XLSX/.test(ui.hint), '«Данные → Импорт»: принимает JSON, CSV, TXT, XLSX — ' + ui.hint);
     ok(ui.b && /\.xlsx/.test(ui.sf), 'кнопка «Таблица квитанций» в архиве ЖКХ, зона чеков принимает таблицы');

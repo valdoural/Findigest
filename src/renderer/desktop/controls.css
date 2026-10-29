@@ -171,3 +171,8 @@
 /* новый чек из почты: строка архива один раз подсвечивается после «Показать» */
 #rca details.fd-hl{animation:fdhl 1.2s var(--fd-ease-out,ease-out) 1}
 @keyframes fdhl{0%,25%{background-color:color-mix(in srgb,var(--ac) 18%,transparent)}100%{background-color:transparent}}
+
+/* Производительность (animation-performance): размытие подложки под каждой карточкой пересчитывается при каждой прокрутке —
+   на длинных листах это десятки слоёв. Фон под карточками — плавный градиент, разница на глаз не видна (сравнение снимков: ≤4 из 255),
+   поэтому размытие оставлено только у шапки, панелей и всплывающих окон. */
+.c{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}

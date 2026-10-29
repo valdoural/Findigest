@@ -31,23 +31,21 @@ const DEFAULT_VOICE = { openai: 'marin', gemini: 'Sulafat', yandex: 'alena' };
 
 /* ---------- текст для чтения вслух ---------- */
 const plural = (n, one, few, many) => { const a = Math.abs(n) % 10, b = Math.abs(n) % 100; return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many; };
+const { speakNumbers } = require('./ru-numbers');
+/** Текст для чтения вслух: без разметки и сокращений, числа — словами (суммы, проценты, даты, годы — см. ru-numbers.js). */
 function prepare(src) {
   let t = String(src || '');
   t = t.replace(/\*\*|__|`|#+\s/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\n+/g, '. ');
-  t = t.replace(/(\d)[   ](?=\d{3}\b)/g, '$1');                            // 1 234 567 → 1234567 (иначе читается по группам)
-  const BIG = { 'тыс': ['тысяча', 'тысячи', 'тысяч'], 'млн': ['миллион', 'миллиона', 'миллионов'], 'млрд': ['миллиард', 'миллиарда', 'миллиардов'] };
-  const big = (a, b, k) => { const f = BIG[k.replace('.', '')]; return b ? f[1] : plural(+a, ...f); };
-  t = t.replace(/(\d+)(?:[.,](\d+))?\s*(тыс\.?|млн|млрд)\s*₽/g, (m, a, b, k) => `${a}${b ? ',' + b : ''} ${big(a, b, k)} рублей`);
-  t = t.replace(/(\d+)(?:[.,](\d+))?\s*(тыс\.?|млн|млрд)(?![а-яё])/g, (m, a, b, k) => `${a}${b ? ',' + b : ''} ${big(a, b, k)}`);
-  t = t.replace(/([−-]?\d+)(?:[.,](\d+))?\s*₽/g, (m, a, b) => `${a.replace('−', 'минус ')}${b ? ',' + b : ''} ${b ? 'рубля' : plural(+a.replace('−', '-'), 'рубль', 'рубля', 'рублей')}`);
-  t = t.replace(/₽/g, 'рублей').replace(/\bруб\.?/g, 'рублей');
-  t = t.replace(/(\d+)(?:[.,](\d+))?\s*%/g, (m, a, b) => `${a}${b ? ',' + b : ''} ${b ? 'процента' : plural(+a, 'процент', 'процента', 'процентов')}`);
   // \b в JS не видит границ кириллических слов — границы задаём явно
   const W = '(?<![а-яёА-ЯЁ])';
-  t = t.replace(new RegExp(W + 'тыс\\.?(?=[\\s,.;]|$)', 'g'), 'тысяч').replace(new RegExp(W + 'млн(?![а-яё])', 'g'), 'миллионов').replace(new RegExp(W + 'млрд(?![а-яё])', 'g'), 'миллиардов');
-  t = t.replace(/\/\s*мес\.?/g, ' в месяц').replace(new RegExp(W + 'мес\\.?(?=[\\s,;]|$)', 'g'), 'месяцев').replace(/(^|[^а-яё])([вВ]\s+)?(\d{4})\s*г(\.?)(?![а-яё])/g, (m, p, v, y, d) => `${p}${v || ''}${y} ${v ? 'году' : 'год'}${d && /^\s+[А-ЯЁA-Z]/.test(t.slice(t.indexOf(m) + m.length)) ? '.' : ''}`)
+  t = t.replace(/\/\s*мес\.?/g, ' в месяц').replace(new RegExp(W + 'мес\\.?(?=[\\s,;]|$)', 'g'), 'месяцев')
+    .replace(/(^|[^а-яё\d])([вВ]\s+)?(\d{4})\s*г(\.?)(?![а-яё])/g, (m, p, v, y, d) => `${p}${v || ''}${y} ${v ? 'году' : 'год'}${d && /^\s+[А-ЯЁA-Z]/.test(t.slice(t.indexOf(m) + m.length)) ? '.' : ''}`)
     .replace(new RegExp(W + 'т\\.\\s?е\\.', 'gi'), m => (/Т/.test(m) ? 'То есть' : 'то есть')).replace(new RegExp(W + 'т\\.\\s?к\\.', 'gi'), m => (/Т/.test(m) ? 'Так как' : 'так как')).replace(new RegExp(W + 'и т\\.\\s?д\\.', 'g'), 'и так далее');
-  t = t.replace(/≈\s*/g, 'примерно ').replace(/\s*[·•|]\s*/g, ', ').replace(/\s*[—–]\s*/g, ' — ').replace(/…/g, '.').replace(/\+(\d)/g, 'плюс $1').replace(/−(\d)/g, 'минус $1');
+  t = t.replace(/≈\s*/g, 'примерно ').replace(/\s*[·•|]\s*/g, ', ').replace(/…/g, '.').replace(/\+\s?(\d)/g, 'плюс $1');
+  t = t.replace(/(^|[\s(])[−-]\s?(\d)/g, '$1минус $2');                          // −663 300 ₽ → минус …
+  t = speakNumbers(t);                                                          // числа словами с родом и склонением
+  t = t.replace(new RegExp(W + 'тыс\\.?(?=[\\s,.;]|$)', 'g'), 'тысяч').replace(new RegExp(W + 'млн(?![а-яё])', 'g'), 'миллионов').replace(new RegExp(W + 'млрд(?![а-яё])', 'g'), 'миллиардов');
+  t = t.replace(/₽/g, 'рублей').replace(new RegExp(W + 'руб\\.?(?![а-яё])', 'g'), 'рублей').replace(/\s*[—–]\s*/g, ' — ');
   t = t.replace(/«|»|"/g, '').replace(/\(([^)]*)\)/g, ', $1,').replace(/\s+,/g, ',').replace(/,{2,}/g, ',').replace(/,\s*([.;!?])/g, '$1').replace(/,\s*$/, '').replace(/\s{2,}/g, ' ').trim();
   return t.slice(0, 3000);
 }

@@ -347,12 +347,16 @@
         if (!t0) return;
         const dm = d => (d ? new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) : '');
         const who = l => `${l.shop || l.from || 'письмо'}${l.date ? ' ' + dm(l.date) : ''}${l.subject ? ` («${l.subject.slice(0, 40)}»)` : ''}`;
-        const lines = [`Подключено. Писем от ваших магазинов за 90 дней: ${t0.receipts90d}.`];
+        const fl = Object.entries(t0.folders || {}).filter(([f]) => f !== 'INBOX');
+        const lines = [`Подключено. Писем от ваших магазинов за 90 дней: ${t0.receipts90d}${fl.length ? ` (в т. ч. в папках: ${fl.map(([f, n]) => `${f.split(/[/.]/).pop()} — ${n}`).join(', ')})` : ''}.`];
         try {
           const st = await N.digest.refresh({ only: 'mail', retry: true });
           const lr = st.lastRun || {}, mr = lr.mail || {}, ids = mr.ids || [];
           const err = (lr.errors || []).find(x => x.source === 'mail');
           if (err) throw Object.assign(new Error(err.message), { code: err.code });
+          // чеки, которые уже лежат в архиве, но не разобраны (ошибка ИИ, обрыв связи), — тоже разобрать сейчас
+          const pend = (window.FD_PAGE && window.FD_PAGE.pendingMail) || [];
+          for (const id of pend) if (!ids.includes(id)) ids.push(id);
           if (ids.length) {
             msg(mm, lines[0] + ` Найдено чеков: ${ids.length}, разбираю…`);
             const list = window.FD_mailIngest ? await window.FD_mailIngest(ids, { quietIfNone: true }) : [];

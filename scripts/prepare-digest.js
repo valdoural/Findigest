@@ -390,6 +390,23 @@ rep(": ${Math.round(cur/target*100)}% достигнуто при ставке $
 rep("<i aria-hidden=\"true\"></i><span>${g.done?'выполнено':'не выполнено'}</span></label>",
   "<i aria-hidden=\"true\"></i><span${!g.done&&pc>=100?' class=\"g-reach\"':''}>${g.done?'выполнено':(pc>=100?'достигнута — отметить':'не выполнено')}</span></label>");
 
+// 8.24 Новый пользователь: на листе «Продукты» — условные чеки (как на остальных листах), пока нет ни своих чеков, ни Zenmoney.
+//      Условные позиции помечены demo:1 и никогда не сохраняются: первый свой чек их убирает (CS('rcp')).
+rep("let RCP=CG('rcp',[]),RL=CG('rules',[]);", `let RCP=CG('rcp',[]),RL=CG('rules',[]);
+function demoRcp(){const L=[['Овощи и фрукты',['Яблоки 1 кг',129],['Бананы',99],['Огурцы',149],['Томаты',189]],['Мясо, птица, рыба',['Филе курицы',389],['Фарш говяжий',459],['Минтай',279]],['Молочные продукты',['Молоко 3,2%',95],['Творог 5%',149],['Сыр',329],['Кефир',89]],['Крупы, хлеб, макароны',['Хлеб',59],['Гречка',109],['Макароны',89]],['Сладости и снеки',['Шоколад',119],['Печенье',99]],['Бытовое и прочее',['Средство для посуды',189],['Бумажные полотенца',149]],['Готовая еда и полуфабрикаты',['Пельмени',349]],['Выпечка',['Круассан',79]]];
+ const shops=['Магазин у дома','Супермаркет','Гипермаркет'];let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;const out=[],p2=v=>String(v).padStart(2,'0');
+ for(let mo=3;mo>=0;mo--){const b=new Date(NOW.getFullYear(),NOW.getMonth()-mo,1),days=mo?new Date(b.getFullYear(),b.getMonth()+1,0).getDate():NOW.getDate();
+  for(let d=1;d<=days;d+=2+Math.floor(rnd()*3)){const dt=b.getFullYear()+'-'+p2(b.getMonth()+1)+'-'+p2(d),st=shops[Math.floor(rnd()*shops.length)],rid='demo|'+dt,n=2+Math.floor(rnd()*4);
+   for(let k=0;k<n;k++){const g=L[Math.floor(rnd()*L.length)],it=g[1+Math.floor(rnd()*(g.length-1))];out.push({d:dt,st,n:it[0],s:Math.round(it[1]*(0.9+rnd()*0.3)),g:g[0],rid,src:rid,demo:1})}}}
+ return out}
+const RCP_DEMO=!RCP.length&&!FDM;if(RCP_DEMO)RCP=demoRcp();`);
+rep("function CS(k,v){", "function CS(k,v){if(k==='rcp'&&Array.isArray(v)&&v.some(x=>x&&x.demo)){v=v.filter(x=>!(x&&x.demo));if(v.length){try{RCP=v}catch(_){}}}");
+rep("$('sdn').textContent=RCP.length?'Данные из загруженных чеков за '", "$('sdn').textContent=RCP.length&&RCP[0].demo?'Условный пример: так будут выглядеть ваши траты, когда появятся чеки — из почты, фото или файлов. '+dbNote():RCP.length?'Данные из загруженных чеков за '");
+rep("'Данных нет: загрузите чеки или нажмите «Показать пример». '", "'Чеков пока нет: подключите почту с чеками или загрузите фото и файлы ниже. '");
+
+// 8.25 ЖКХ у нового пользователя: вместо красного «не хватает квитанций за январь…» по условной квитанции — подсказка
+rep("return {miss,msg:miss.length?`В 2026 не хватает", "const noArc=typeof ARC==='object'&&!Object.values(ARC).some(e=>e&&e.kind!=='receipt');if(noArc)return {miss:[],msg:'Пока пример по условной квитанции. Загрузите свои квитанции — здесь появится проверка, за какие месяцы их не хватает.'};return {miss,msg:miss.length?`В 2026 не хватает");
+
 // 9. Доступ модулей программы (импорт таблиц и др.) к данным отчёта: основной скрипт — асинхронная функция,
 //    его переменные снаружи не видны, поэтому в её конце публикуется небольшой интерфейс window.FD_PAGE.
 {
@@ -400,7 +417,7 @@ rep("<i aria-hidden=\"true\"></i><span>${g.done?'выполнено':'не вы�
 window.FD_PAGE={get IT(){return IT},set IT(v){IT=v},get RCP(){return RCP},set RCP(v){RCP=v},CS,CG,renderAll,sRefresh,askConfirm,addFiles,loadXlsx,
   // новые чеки из почты: перечитать архив из базы и разобрать без перезагрузки страницы (desktop/refresh.js, connections.js)
   ingestMail:async(ids,opts)=>{for(let i=0;JOB.on&&i<240;i++)await new Promise(r=>setTimeout(r,500));await arcLoad();renderReceiptArchive();
-   const want=ids&&ids.length?new Set(ids):null,list=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed'&&(want?want.has(e.id):e.status==='new'));
+   const want=ids&&ids.length?new Set(ids):null,list=Object.values(ARC).filter(e=>e.kind==='receipt'&&e.source==='mail'&&e.status!=='parsed'&&(want?want.has(e.id):(e.status==='new'||(opts&&opts.retry&&e.status==='error'))));
    if(list.length&&!(opts&&opts.noParse))await parseReceipts(list);
    return list.map(e=>{const a=ARC[e.id]||e;return {id:a.id,store:a.store||a.mstore||'',date:a.date||a.maildate||'',total:a.total||null,items:a.items||0,status:a.status,err:a.err||null}})},
   // чеки, где сумма позиций расходится с итогом больше чем на 5% (старые ошибки разбора: копейки, пропущенные строки) — разобрать заново

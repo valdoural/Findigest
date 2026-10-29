@@ -181,6 +181,7 @@ function registerAssistant(hooks) {
   handle('assistant:ask', q => assistant.ask(q));
   handle('assistant:transcribe', ({ audio, reqId }) => ai.transcribe(audio, reqId));
   handle('assistant:speak', text => ai.speak(text));
+  handle('assistant:speechText', text => require('./ai/speech').prepare(String(text || '')));   // для голоса Windows: числа словами
   handle('assistant:history', () => assistant.history());
   handle('assistant:clear', () => assistant.clearHistory());
   handle('assistant:info', () => ({ ai: ai.available(), ...ai.speechInfo(), settings: settings.get().assistant }));

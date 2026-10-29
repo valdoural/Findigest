@@ -26,7 +26,7 @@ const PRESETS = {
 const SUBJECTS = ['кассовый чек', 'электронный чек', 'чек по заказу', 'ваш чек'];
 const MAX_SIZE = 15 * 1024 * 1024;
 // версия распознавания: при её росте письма, где раньше «чека не нашлось» или была ошибка, проверяются заново
-const EXTRACT_V = 2;
+const EXTRACT_V = 3;   // 3: поиск по всем папкам и разные письма с одинаковым Message-ID — один раз перечитать почту на всю глубину
 
 function client() {
   const m = settings.get().mail;
@@ -74,6 +74,40 @@ function forgetFailed() {
   return n;
 }
 
+/** Папки, где искать чеки: «Входящие» и пользовательские/автоматические папки («Рассылки», «Покупки», ярлыки Gmail…),
+ *  кроме корзины, спама, отправленных, черновиков и «Вся почта» (там те же письма). Почтовики сами раскладывают чеки по папкам —
+ *  поэтому поиск только во «Входящих» терял новые письма. */
+const SKIP_USE = new Set(['\\Trash', '\\Junk', '\\Sent', '\\Drafts', '\\All', '\\Flagged', '\\Important', '\\Archive']);
+const SKIP_NAME = /^(trash|spam|junk|sent|drafts?|корзина|спам|отправленные|черновики|удал[её]нные|исходящие|\[gmail\]$|all mail|вся почта|outbox)$/i;
+async function folders(c) {
+  const m = settings.get().mail;
+  if (m.allFolders === false) return [m.folder || 'INBOX'];
+  let list = [];
+  try { list = await c.list(); } catch (e) { log.warn('Почта: список папок недоступен', e.message); return [m.folder || 'INBOX']; }
+  const out = ['INBOX'];
+  for (const f of list) {
+    if (!f || !f.path || /^inbox$/i.test(f.path)) continue;
+    if ((f.flags && [...f.flags].some(x => /noselect|nonexistent/i.test(x))) || (f.specialUse && SKIP_USE.has(f.specialUse))) continue;
+    const leaf = String(f.name || f.path.split(f.delimiter || '/').pop() || '');
+    if (SKIP_NAME.test(leaf) || SKIP_NAME.test(f.path)) continue;
+    out.push(f.path);
+  }
+  if (m.folder && !out.includes(m.folder)) out.unshift(m.folder);
+  return out.slice(0, 40);
+}
+
+/** Ключ письма: Message-ID. Некоторые рассылки ставят один и тот же Message-ID разным письмам — тогда новое письмо с другой
+ *  датой получает свой ключ (иначе оно считалось «уже загруженным» и чек терялся, а его запись в архиве перезаписывалась). */
+function keyFor(seen, env, folder, uidValidity, uid) {
+  const mid = env && env.messageId;
+  const base = mid || `${folder}:${uidValidity}:${uid}`;
+  if (!mid) return base;
+  const when = env.date ? new Date(env.date) : null;
+  const row = seen.get(base);
+  if (row && row.date && when && Math.abs(new Date(row.date) - when) > 120e3) return base + '#' + when.toISOString();
+  return base;
+}
+
 async function searchUids(c, since) {
   const set = new Set();
   for (const s of senders()) for (const u of (await c.search({ from: s.addr, since }, { uid: true })) || []) set.add(u);
@@ -98,24 +132,30 @@ async function test() {
   const c = client();
   try {
     await c.connect();
-    const lock = await c.getMailboxLock(m.folder || 'INBOX');
-    try {
-      const uids = await searchUids(c, new Date(Date.now() - 90 * 864e5));
-      // что программа знает о каждом найденном письме (последние 20): загружено, «чека нет», ошибка или ещё не смотрели
-      const seen = D.db.prepare('SELECT status, note, archive_ids FROM mail_seen WHERE key=?');
-      const letters = [];
-      for (const uid of uids.slice(-20)) {
-        const msg = await c.fetchOne(uid, { uid: true, envelope: true }, { uid: true });
-        if (!msg || !msg.envelope) continue;
-        const env = msg.envelope;
-        const key = env.messageId || `${m.folder || 'INBOX'}:${c.mailbox.uidValidity}:${uid}`;
-        const from = ((env.from || [])[0] || {}).address || '';
-        const sn = seen.get(key) || null;
-        letters.push({ date: env.date ? new Date(env.date).toISOString() : null, from, shop: shopFor(from), subject: (env.subject || '').slice(0, 120),
-          status: sn ? sn.status : 'new', note: sn ? sn.note : null });
-      }
-      return { ok: true, total: c.mailbox.exists, receipts90d: uids.length, senders: senders().length, letters };
-    } finally { lock.release(); }
+    // что программа знает о каждом найденном письме: загружено, «чека нет», ошибка или ещё не смотрели — по всем папкам
+    const seen = D.db.prepare('SELECT status, note, archive_ids, uid, folder, date FROM mail_seen WHERE key=?');
+    const letters = [], ids = new Set(); let total = 0, found = 0; const where = {};
+    for (const folder of await folders(c)) {
+      let lock; try { lock = await c.getMailboxLock(folder); } catch (_) { continue; }
+      try {
+        if (folder === 'INBOX') total = c.mailbox.exists;
+        const uids = await searchUids(c, new Date(Date.now() - 90 * 864e5));
+        for (const uid of uids.slice(-30)) {
+          const msg = await c.fetchOne(uid, { uid: true, envelope: true }, { uid: true });
+          if (!msg || !msg.envelope) continue;
+          const env = msg.envelope;
+          const key = keyFor(seen, env, folder, c.mailbox.uidValidity, uid);
+          if (ids.has(key)) continue; ids.add(key);
+          const from = ((env.from || [])[0] || {}).address || '';
+          const sn = seen.get(key) || null;
+          letters.push({ date: env.date ? new Date(env.date).toISOString() : null, from, shop: shopFor(from), subject: (env.subject || '').slice(0, 120), folder,
+            status: sn ? sn.status : 'new', note: sn ? sn.note : null });
+        }
+        found += uids.length; if (uids.length) where[folder] = uids.length;
+      } finally { lock.release(); }
+    }
+    letters.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+    return { ok: true, total, receipts90d: found, folders: where, senders: senders().length, letters: letters.slice(0, 30) };
   } catch (e) { throw friendly(e); }
   finally { try { await c.logout(); } catch (_) { /* уже закрыто */ } }
 }
@@ -143,37 +183,41 @@ function fetchReceipts({ render, retry = false } = {}) {
     const c = client();
     try {
       await c.connect();
-      const folder = m.folder || 'INBOX';
-      const lock = await c.getMailboxLock(folder);
-      try {
-        const uids = await searchUids(c, since);
-        const seen = D.db.prepare('SELECT 1 FROM mail_seen WHERE key=?');
-        const mark = D.db.prepare(`INSERT OR REPLACE INTO mail_seen(key,folder,uid,date,from_addr,subject,archive_ids,status,note,created) VALUES(?,?,?,?,?,?,?,?,?,?)`);
-        for (const uid of uids) {
-          const env = await c.fetchOne(uid, { uid: true, envelope: true, size: true }, { uid: true });
-          if (!env) continue;
-          const key = (env.envelope && env.envelope.messageId) || `${folder}:${c.mailbox.uidValidity}:${uid}`;
-          if (seen.get(key)) continue;
-          res.checked++;
-          if (env.size > MAX_SIZE) { mark.run(key, folder, uid, null, '', (env.envelope || {}).subject || '', '[]', 'skipped', 'письмо больше 15 МБ', new Date().toISOString()); res.skipped++; continue; }
-          try {
-            const msg = await c.fetchOne(uid, { uid: true, source: true }, { uid: true });
-            const parsed = await simpleParser(msg.source);
-            const from = ((parsed.from && parsed.from.value && parsed.from.value[0]) || {}).address || '';
-            const r = await extract(parsed, { key, store: shopFor(from), render, fetchText, fromStore: !!senderOf(from) });
-            for (const e of r.entries) { store.archivePut(e); res.ids.push(e.id); }
-            mark.run(key, folder, uid, parsed.date ? new Date(parsed.date).toISOString() : null, from, r.subject, JSON.stringify(r.entries.map(e => e.id)),
-              r.entries.length ? 'imported' : 'no_receipt', r.note || null, new Date().toISOString());
-            if (r.entries.length) { res.imported++; res.receipts += r.entries.length; } else res.skipped++;
-            res.letters.push({ date: parsed.date ? new Date(parsed.date).toISOString() : null, from, shop: shopFor(from), subject: r.subject, status: r.entries.length ? 'imported' : 'no_receipt', note: r.note || null, n: r.entries.length });
-          } catch (x) {
-            res.errors++;
-            log.warn('Почта: письмо', uid, x.message);
-            mark.run(key, folder, uid, null, '', (env.envelope || {}).subject || '', '[]', 'error', x.message.slice(0, 200), new Date().toISOString());
-            res.letters.push({ date: null, from: '', shop: '', subject: (env.envelope || {}).subject || '', status: 'error', note: x.message.slice(0, 200), n: 0 });
+      const seen = D.db.prepare('SELECT status, date FROM mail_seen WHERE key=?');
+      const mark = D.db.prepare(`INSERT OR REPLACE INTO mail_seen(key,folder,uid,date,from_addr,subject,archive_ids,status,note,created) VALUES(?,?,?,?,?,?,?,?,?,?)`);
+      const done = new Set();
+      for (const folder of await folders(c)) {
+        let lock; try { lock = await c.getMailboxLock(folder); } catch (e) { log.warn('Почта: папка', folder, e.message); continue; }
+        try {
+          const uids = await searchUids(c, since);
+          for (const uid of uids) {
+            const env = await c.fetchOne(uid, { uid: true, envelope: true, size: true }, { uid: true });
+            if (!env) continue;
+            const key = keyFor(seen, env.envelope, folder, c.mailbox.uidValidity, uid);
+            const edate = env.envelope && env.envelope.date ? new Date(env.envelope.date).toISOString() : null;
+            if (done.has(key) || seen.get(key)) continue;
+            done.add(key);
+            res.checked++;
+            if (env.size > MAX_SIZE) { mark.run(key, folder, uid, edate, '', (env.envelope || {}).subject || '', '[]', 'skipped', 'письмо больше 15 МБ', new Date().toISOString()); res.skipped++; continue; }
+            try {
+              const msg = await c.fetchOne(uid, { uid: true, source: true }, { uid: true });
+              const parsed = await simpleParser(msg.source);
+              const from = ((parsed.from && parsed.from.value && parsed.from.value[0]) || {}).address || '';
+              const r = await extract(parsed, { key, store: shopFor(from), render, fetchText, fromStore: !!senderOf(from) });
+              for (const e of r.entries) { store.archivePut(e); res.ids.push(e.id); }
+              mark.run(key, folder, uid, parsed.date ? new Date(parsed.date).toISOString() : edate, from, r.subject, JSON.stringify(r.entries.map(e => e.id)),
+                r.entries.length ? 'imported' : 'no_receipt', r.note || null, new Date().toISOString());
+              if (r.entries.length) { res.imported++; res.receipts += r.entries.length; } else res.skipped++;
+              res.letters.push({ date: parsed.date ? new Date(parsed.date).toISOString() : edate, from, shop: shopFor(from), folder, subject: r.subject, status: r.entries.length ? 'imported' : 'no_receipt', note: r.note || null, n: r.entries.length });
+            } catch (x) {
+              res.errors++;
+              log.warn('Почта: письмо', folder, uid, x.message);
+              mark.run(key, folder, uid, edate, '', (env.envelope || {}).subject || '', '[]', 'error', x.message.slice(0, 200), new Date().toISOString());
+              res.letters.push({ date: edate, from: '', shop: '', folder, subject: (env.envelope || {}).subject || '', status: 'error', note: x.message.slice(0, 200), n: 0 });
+            }
           }
-        }
-      } finally { lock.release(); }
+        } finally { lock.release(); }
+      }
       settings.patch('mail', { lastCheck: new Date().toISOString(), rescan: false, lastResult: { at: new Date().toISOString(), ...res, ids: undefined, letters: undefined } });
       D.db.prepare('INSERT INTO sync_log(source,started,finished,status,message) VALUES(?,?,?,?,?)')
         .run('mail', started, new Date().toISOString(), 'ok', `писем ${res.checked}, чеков ${res.receipts}, без чека ${res.skipped}, ошибок ${res.errors}`);

@@ -70,7 +70,7 @@ app.whenReady().then(async () => {
     // голос: фиктивный микрофон Chromium, ручная остановка
     await js(`window.fdNative.assistant.set({autoStop:false})`);
     await js(`document.getElementById('as-mic').click()`); await sleep(2500);
-    const rec = await js(`({on:document.getElementById('as-rec').classList.contains('on'),btn:document.getElementById('asb').classList.contains('rec'),lvl:document.getElementById('as-lvl').style.width})`);
+    const rec = await js(`({on:document.getElementById('as-rec').classList.contains('on'),btn:document.getElementById('asb').classList.contains('rec'),lvl:document.getElementById('as-lvl').style.transform})`);
     ok(rec.on && rec.btn, 'идёт запись, уровень ' + rec.lvl);
     fs.writeFileSync(path.join(OUT, 'assistant-rec.png'), (await w.webContents.capturePage()).toPNG());
     await js(`document.getElementById('as-mic').click()`); await sleep(2000);

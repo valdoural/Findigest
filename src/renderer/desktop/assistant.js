@@ -151,7 +151,9 @@
     // среди голосов Windows лучше звучат «естественные» (Natural/Online), если они установлены
     const v = list.find(x => x.name === s.voice) || list.find(x => /Natural|Online/i.test(x.name)) || list[0];
     if (!v) { $('as-spk').classList.remove('on'); note('В Windows не установлен русский голос. Параметры Windows → Время и язык → Речь → «Добавить голоса» → Русский. Или подключите GPT, Gemini или YandexGPT — у них живые голоса.'); return; }
-    const u = new SpeechSynthesisUtterance(text.replace(/₽/g, ' рублей').replace(/\s*·\s*/g, ', ')); u.voice = v; u.lang = v.lang; u.rate = 1;
+    // голос Windows читает «3 033 ₽» по цифрам — текст готовит основной процесс: суммы, проценты и даты словами
+    let spoken = text; try { if (A.speechText) spoken = await A.speechText(text); } catch (_) { spoken = text.replace(/₽/g, ' рублей'); }
+    const u = new SpeechSynthesisUtterance(spoken); u.voice = v; u.lang = v.lang; u.rate = 1;
     u.onend = u.onerror = () => $('as-spk').classList.remove('on');
     speechSynthesis.speak(u);
   }
@@ -177,7 +179,7 @@
       chunks.push(new Float32Array(d));
       let sum = 0; for (let i = 0; i < d.length; i++) sum += d[i] * d[i];
       const rms = Math.sqrt(sum / d.length), now = performance.now();
-      $('as-lvl').style.width = Math.min(100, rms * 900) + '%';
+      $('as-lvl').style.transform = 'scaleX(' + Math.min(1, rms * 9).toFixed(3) + ')';   // transform — без перерасчёта раскладки каждый кадр
       if (rms > 0.02) { spoke = true; lastVoice = now; }
       const auto = info.settings.autoStop !== false;
       if (auto && spoke && now - lastVoice > 1400) stopRec();
@@ -195,7 +197,7 @@
     try { r.proc.disconnect(); r.src.disconnect(); } catch (_) { /* уже отключено */ }
     r.stream.getTracks().forEach(t => t.stop());
     r.ctx.close();
-    btn.classList.remove('rec'); $('as-mic').classList.remove('rec'); $('as-rec').classList.remove('on'); $('as-lvl').style.width = '0';
+    btn.classList.remove('rec'); $('as-mic').classList.remove('rec'); $('as-rec').classList.remove('on'); $('as-lvl').style.transform = 'scaleX(0)';
     return r;
   }
   async function stopRec(cancel, msg) {
