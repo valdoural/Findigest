@@ -32,6 +32,15 @@ const configured = c => !!(c.owner && c.repo);
 const current = () => (app.isPackaged ? app.getVersion() : PKG.version);
 const send = (ch, data) => { for (const w of BrowserWindow.getAllWindows()) w.webContents.send(ch, data); };
 const err = (code, message) => Object.assign(new Error(message), { code });
+const SESSION = crypto.randomBytes(6).toString('hex');      // отличает «этот запуск» от запуска после установки
+const DRY = !!process.env.FD_UPD_DRYRUN;                    // только для тестов: все шаги, но без запуска установщика и выхода
+const stage = (name, extra) => send('updates:progress', { stage: name, ...extra });
+/** Итог прошлой установки, видимый после перезапуска: { from, to, at, ok } — ok, если версия действительно сменилась. */
+function after() {
+  const p = (settings.get().updates || {}).pending;
+  if (!p || p.session === SESSION) return null;
+  return { from: p.from, to: p.to, at: p.at, ok: cmp(current(), p.to) >= 0 };
+}
 
 /** Сравнение версий 1.2.3 и 1.2.3-beta.1: >0 — a новее. */
 function cmp(a, b) {
@@ -141,7 +150,9 @@ async function fetchInstaller(version) {
         const m = y.match(/^sha512:\s*(\S+)/m); if (m) expected = m[1];
       } catch (_) { /* без latest.yml — проверим только размер */ }
     }
-    const sha = await download(priv ? rel.exe.api : rel.exe.url, file, rel.exe.size, (got, total) => send('updates:progress', { version: rel.version, got, total }));
+    stage('download', { version: rel.version, got: 0, total: rel.exe.size || 0 });
+    const sha = await download(priv ? rel.exe.api : rel.exe.url, file, rel.exe.size, (got, total) => send('updates:progress', { stage: 'download', version: rel.version, got, total }));
+    stage('verify', { version: rel.version, signed: !!expected });
     const size = fs.statSync(file).size;
     if (rel.exe.size && size !== rel.exe.size) { fs.rmSync(file, { force: true }); throw err('corrupt', 'файл скачался не полностью — повторите'); }
     if (expected && expected !== sha) { fs.rmSync(file, { force: true }); throw err('corrupt', 'контрольная сумма не совпала — файл повреждён, установка отменена'); }
@@ -154,11 +165,17 @@ async function fetchInstaller(version) {
 /** Скачать и установить: тихая установка поверх (папка и данные сохраняются), затем программа запустится снова. */
 async function install(version) {
   const { file, version: v } = await fetchInstaller(version);
-  if (process.platform !== 'win32') { shell.showItemInFolder(file); return { file, started: false }; }
+  if (process.platform !== 'win32' && !DRY) { shell.showItemInFolder(file); return { file, started: false }; }
   log.info(`Обновления: запуск установки ${v}`);
+  settings.patch('updates', { ...(settings.get().updates || {}), pending: { from: current(), to: v, at: new Date().toISOString(), session: SESSION } });
+  stage('install', { version: v });
+  // окно успевает показать «Устанавливаю — программа закроется и откроется снова», затем установщик работает без окна
+  await new Promise(r => setTimeout(r, DRY ? 200 : 2500));
+  stage('restart', { version: v });
+  if (DRY) return { file, started: true, version: v, dry: true };
   const child = spawn(file, ['/S', '--updated', '--force-run'], { detached: true, stdio: 'ignore' });
   child.unref();
-  setTimeout(() => app.quit(), 600);
+  setTimeout(() => app.quit(), 400);
   return { file, started: true, version: v };
 }
 
@@ -171,13 +188,15 @@ function set(patch) {
   if (patch.prerelease != null) next.prerelease = !!patch.prerelease;
   if (patch.auto != null) next.auto = !!patch.auto;
   if (patch.skip != null) next.skip = String(patch.skip);
+  if (patch.ackAfter) next.pending = null;
   settings.patch('updates', next);
   last = null;
   schedule();
   return status();
 }
 
-const status = () => last || (() => { const c = cfg(); return { current: current(), configured: configured(c), owner: c.owner, repo: c.repo, prerelease: c.prerelease, auto: c.auto, hasToken: !!secrets.get('github_token'), releases: [], latest: null, newer: false,
+const status = () => ({ ...(last || base()), after: after() });
+const base = () => (() => { const c = cfg(); return { current: current(), configured: configured(c), owner: c.owner, repo: c.repo, prerelease: c.prerelease, auto: c.auto, hasToken: !!secrets.get('github_token'), releases: [], latest: null, newer: false,
   page: configured(c) ? `https://github.com/${c.owner}/${c.repo}/releases` : null, latestPage: configured(c) ? `https://github.com/${c.owner}/${c.repo}/releases/latest` : null }; })();
 
 /** Автопроверка: через минуту после запуска и раз в 12 часов, если включена и репозиторий указан. */

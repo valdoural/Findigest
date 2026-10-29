@@ -101,7 +101,6 @@
   background:color-mix(in srgb,var(--ac) 10%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent)}
 .ab-ok{margin:0;color:var(--pos)}
 .ab-prog{height:6px;border-radius:999px;background:var(--s2);overflow:hidden;margin:8px 0}
-.ab-prog[hidden]{display:none}
 .ab-prog i{display:block;height:100%;width:0;background:var(--ac);border-radius:inherit;transition:width var(--fd-d) ease-out}
 .ab-list{list-style:none;margin:8px 0 0;padding:0}
 .ab-list li{padding:10px 0;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
@@ -124,3 +123,37 @@
   color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent)}
 .cn-flow b{font-size:.9rem}
 .cn-flow span{color:var(--mu);font-size:.82rem;line-height:1.4}
+
+/* Окно «Обновление» (desktop/about.js): шаги установки и их статус */
+.ab-restart{margin:8px 0 0;padding:9px 12px;border-radius:12px;font-size:.8rem;color:var(--mu);background:color-mix(in srgb,var(--ac) 7%,transparent)}
+.ab-restart b{color:var(--tx)}
+.ab-new small{display:block;color:var(--mu);font-size:.75rem;margin-top:2px}
+.fd-upd{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(15,23,42,.32);
+  animation:fdupd-in var(--fd-d) var(--fd-ease-out) 1}
+.fd-upd[hidden]{display:none}
+@keyframes fdupd-in{from{opacity:0}}
+.fd-upd-box{width:min(460px,100%);background:color-mix(in srgb,var(--bg) 94%,transparent);border:1px solid var(--gb);border-radius:20px;padding:18px 18px 16px;
+  box-shadow:0 18px 50px rgba(15,23,42,.28);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
+.fd-upd-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.fd-upd-head b{font-size:1.05rem}
+.fd-upd-head small{color:var(--mu);font-size:.8rem}
+.fd-upd-steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.fd-upd-steps li{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:8px 0;color:var(--mu);transition:color var(--fd-d)}
+.fd-upd-steps li>i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--bd);box-sizing:border-box;margin-top:1px;
+  transition:background-color var(--fd-d),border-color var(--fd-d)}
+.fd-upd-steps li b{display:block;font-weight:600;font-size:.88rem}
+.fd-upd-steps li small{display:block;font-size:.76rem;margin-top:1px;font-variant-numeric:tabular-nums}
+.fd-upd-steps li[data-s="run"],.fd-upd-steps li[data-s="done"],.fd-upd-steps li[data-s="err"]{color:var(--tx)}
+.fd-upd-steps li[data-s="run"] small,.fd-upd-steps li[data-s="done"] small{color:var(--mu)}
+.fd-upd-steps li[data-s="run"]>i{border-color:color-mix(in srgb,var(--ac) 25%,transparent);border-top-color:var(--ac);animation:fdspin .9s linear infinite}
+.fd-upd-steps li[data-s="done"]>i{background:var(--pos);border-color:var(--pos);color:#fff}
+.fd-upd-steps li[data-s="err"]>i{background:var(--neg);border-color:var(--neg);color:#fff}
+.fd-upd-steps li[data-s="err"] small{color:var(--neg)}
+.fd-upd-steps .ab-prog{margin:6px 0 0}
+.fd-upd-steps li:not([data-s="run"]) .ab-prog{display:none}
+.fd-upd-steps .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.fd-upd-note{margin:12px 0 0;padding:10px 12px;border-radius:12px;font-size:.8rem;color:var(--mu);background:color-mix(in srgb,var(--ac) 8%,transparent)}
+.fd-upd-note b{color:var(--tx)}
+.fd-upd-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:12px}
+.fd-upd-acts:empty{display:none}
+@media (prefers-reduced-motion:reduce){.fd-upd-steps li[data-s="run"]>i{animation-duration:2s!important;animation-iteration-count:infinite!important}}

@@ -52,7 +52,8 @@
         <div class="cn-row cn-foot"><button class="bn" type="button" id="ab-check" ${s.configured ? '' : 'disabled'}>Проверить обновления</button>
           ${s.latestPage ? `<button class="cn-link" type="button" data-url="${esc(s.latestPage)}">Последняя версия на GitHub →</button>` : ''}</div>
         <div class="ab-state" id="ab-state">${stateHtml(s, L)}</div>
-        <div class="ab-prog" id="ab-prog" ${prog ? '' : 'hidden'}><i style="width:${prog ? Math.round(prog.got / Math.max(1, prog.total) * 100) : 0}%"></i></div>
+        <p class="ab-restart"><b>После установки программа перезапустится сама.</b> Окно закроется на 10–30 секунд и откроется уже обновлённым —
+          ничего нажимать не нужно. Данные, ключи и настройки сохраняются.</p>
         <p class="cn-msg" id="ab-msg" role="status"></p>
       </div>`;
 
@@ -82,7 +83,7 @@
     if (!s.configured) return '<p class="nt">Укажите репозиторий, где выпускаются версии, — и программа будет обновляться сама.</p>';
     if (!s.checkedAt) return '<p class="nt">Ещё не проверяли. Нажмите «Проверить обновления».</p>';
     if (!L) return '<p class="nt">В репозитории пока нет выпусков. Первый — командой <code>npm run release</code>.</p>';
-    if (s.newer) return `<div class="ab-new"><span>Доступна версия <b>${esc(L.version)}</b> от ${fmtDate(L.date)}${L.exe ? ' · ' + mb(L.exe.size) : ''}</span>
+    if (s.newer) return `<div class="ab-new"><span>Доступна версия <b>${esc(L.version)}</b> от ${fmtDate(L.date)}${L.exe ? ' · ' + mb(L.exe.size) : ''}<small>после установки программа перезапустится</small></span>
         ${L.exe ? `<button class="bn" type="button" data-inst="${esc(L.version)}">Скачать и установить</button>` : '<span class="nt">в релизе нет установщика</span>'}</div>`;
     return `<p class="ab-ok">Установлена последняя версия (${esc(s.current)}). Проверено ${new Date(s.checkedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.</p>`;
   }
@@ -97,12 +98,141 @@
       ? await window.FD_PAGE.askConfirm(`Установить версию ${v}? Программа закроется, обновление установится поверх и она откроется снова. Данные и ключи сохранятся.`, 'Установить')
       : true;
     if (!ok) return;
-    prog = { got: 0, total: 1 }; render(); msg(`Скачиваю версию ${v}…`);
+    run(v);
+  }
+
+  /* ---------- окно «Обновление»: шаги и их статус ---------- */
+  const STEPS = [
+    ['download', 'Скачивание установщика', 'с GitHub Releases'],
+    ['verify', 'Проверка файла', 'контрольная сумма sha512 из latest.yml'],
+    ['install', 'Установка поверх текущей версии', 'данные, ключи и настройки сохраняются'],
+    ['restart', 'Перезапуск программы', 'окно закроется на 10–30 секунд и откроется само'],
+  ];
+  const ICON = {
+    wait: '', run: '',
+    done: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    err: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>',
+  };
+  const SAY = { wait: 'ожидает', run: 'идёт', done: 'готово', err: 'ошибка' };
+  const dlg = document.createElement('div');
+  dlg.id = 'fdupd'; dlg.className = 'fd-upd'; dlg.hidden = true;
+  dlg.innerHTML = `<div class="fd-upd-box" role="dialog" aria-modal="true" aria-labelledby="fdupd-t" aria-describedby="fdupd-note">
+      <div class="fd-upd-head"><b id="fdupd-t">Обновление</b><small id="fdupd-sub"></small></div>
+      <ol class="fd-upd-steps">${STEPS.map(([k, t, d]) => `<li data-k="${k}" data-s="wait"><i aria-hidden="true"></i>
+        <div><b>${t}</b><small data-d="${esc(d)}">${d}</small>${k === 'download' ? '<div class="ab-prog"><i></i></div>' : ''}</div>
+        <span class="vh"></span></li>`).join('')}</ol>
+      <p class="fd-upd-note" id="fdupd-note"><b>После установки программа перезапустится автоматически.</b> Ничего нажимать не нужно —
+        дождитесь, когда окно откроется снова.</p>
+      <p class="cn-msg err" id="fdupd-err" role="alert"></p>
+      <div class="fd-upd-acts" id="fdupd-acts"></div>
+    </div>`;
+  document.body.appendChild(dlg);
+  const U = { v: '', from: '', phase: 'idle', lastFocus: null };
+  const row = k => dlg.querySelector(`li[data-k="${k}"]`);
+  function step(k, state, detail) {
+    const li = row(k); if (!li) return;
+    li.dataset.s = state; li.querySelector('i').innerHTML = ICON[state];
+    li.querySelector('.vh').textContent = SAY[state];
+    const sm = li.querySelector('small'); sm.textContent = detail != null ? detail : sm.dataset.d;
+  }
+  function acts(list) {
+    $('fdupd-acts').innerHTML = list.map(([id, t, prim]) => `<button class="bn${prim ? '' : ' gh'}" type="button" data-u="${id}">${t}</button>`).join('');
+  }
+  function show() {
+    if (dlg.hidden) { U.lastFocus = document.activeElement; dlg.hidden = false; }
+    const b = dlg.querySelector('.fd-upd-acts button'); if (b) b.focus();
+  }
+  function hide() {
+    if (U.phase === 'install' || U.phase === 'restart') return;   // программа вот-вот закроется — окно остаётся
+    dlg.hidden = true; if (U.lastFocus && U.lastFocus.focus) U.lastFocus.focus();
+  }
+  function begin(v) {
+    U.v = v; U.from = (st && st.current) || info.version; U.phase = 'download';
+    $('fdupd-t').textContent = `Обновление до версии ${v}`; $('fdupd-sub').textContent = `установлена ${U.from}`;
+    $('fdupd-err').textContent = '';
+    STEPS.forEach(([k]) => step(k, 'wait')); step('download', 'run', 'подключаюсь к GitHub…');
+    dlg.querySelector('.ab-prog i').style.width = '0%';
+    acts([['hide', 'Скрыть — скачивание продолжится']]);
+    show();
+  }
+  async function run(v) {
+    if (U.phase !== 'idle' && U.phase !== 'error' && U.phase !== 'after') return show();   // уже идёт — просто показать окно
+    begin(v);
     try {
       const r = await N.updates.install(v);
-      msg(r.started ? 'Установщик запущен — программа сейчас закроется и откроется уже обновлённой.' : 'Установщик скачан: ' + r.file, 'ok');
-    } catch (e) { prog = null; render(); msg('Обновление не удалось: ' + e.message, 'err'); }
+      if (!r.started) {                                   // не Windows: установщик только скачан
+        U.phase = 'error'; step('install', 'err', 'установка поверх — только в Windows'); step('restart', 'wait');
+        $('fdupd-err').textContent = 'Установщик скачан: ' + r.file; acts([['close', 'Закрыть', 1]]); show();
+      }
+    } catch (e) { fail(e.message); }
   }
+  function fail(text) {
+    const cur = STEPS.find(([k]) => row(k).dataset.s === 'run');
+    if (cur) step(cur[0], 'err');
+    U.phase = 'error';
+    $('fdupd-err').textContent = 'Обновление не удалось: ' + text + '. Текущая версия продолжает работать.';
+    acts([['retry', 'Повторить', 1], ['page', 'Скачать вручную'], ['close', 'Закрыть']]); show();
+  }
+  N.updates.onProgress(p => {
+    if (U.phase === 'idle' || U.phase === 'after') return;
+    const k = p.stage || 'download';
+    if (k === 'download') {
+      const pc = p.total ? Math.min(100, Math.round(p.got / p.total * 100)) : 0;
+      dlg.querySelector('.ab-prog i').style.width = pc + '%';
+      step('download', 'run', p.got ? `${mb(p.got)} из ${mb(p.total)} · ${pc}%` : 'начинаю…');
+    } else if (k === 'verify') {
+      U.phase = 'verify';
+      step('download', 'done', `${mb(prog && prog.total)} скачано`.trim()); dlg.querySelector('.ab-prog i').style.width = '100%';
+      step('verify', 'done', p.signed ? 'контрольная сумма совпала' : 'размер совпал (latest.yml в релизе нет)');
+    } else if (k === 'install') {
+      U.phase = 'install'; step('install', 'run', 'запускаю установщик — программа сейчас закроется');
+      acts([]); show();
+    } else if (k === 'restart') {
+      U.phase = 'restart'; step('install', 'done', 'установщик работает без окна');
+      step('restart', 'run', 'программа закрывается и откроется сама через 10–30 секунд');
+    }
+    if (k === 'download') prog = p;
+  });
+  // после перезапуска: итог прошлой установки
+  function afterInstall(a) {
+    if (!a) return;
+    U.phase = 'after'; U.v = a.to;
+    STEPS.forEach(([k]) => step(k, 'done'));
+    $('fdupd-err').textContent = '';
+    if (a.ok) {
+      $('fdupd-t').textContent = `Обновлено до версии ${a.to}`; $('fdupd-sub').textContent = `была ${a.from}`;
+      step('restart', 'done', 'программа перезапущена — всё готово');
+      $('fdupd-note').innerHTML = 'Данные, ключи и настройки на месте. Что изменилось — в описании выпуска на GitHub.';
+      acts([['ack', 'Готово', 1], ['notes', 'Что нового']]);
+    } else {
+      $('fdupd-t').textContent = `Версия ${a.to} не установилась`; $('fdupd-sub').textContent = `работает ${(st && st.current) || info.version}`;
+      step('install', 'err', 'установщик не заменил программу'); step('restart', 'done', 'программа перезапущена');
+      $('fdupd-note').innerHTML = 'Попробуйте ещё раз или скачайте установщик вручную и запустите его — данные сохранятся.';
+      acts([['retry', 'Повторить', 1], ['page', 'Скачать вручную'], ['ack', 'Закрыть']]);
+    }
+    dlg.querySelector('.ab-prog i').style.width = '100%';
+    show();
+  }
+  dlg.addEventListener('click', async e => {
+    const b = e.target.closest('button[data-u]');
+    if (!b) { if (e.target === dlg) hide(); return; }
+    const a = b.dataset.u;
+    const rel = st && st.owner ? `https://github.com/${st.owner}/${st.repo}/releases` : '';
+    if (a === 'hide' || a === 'close') hide();
+    if (a === 'retry') { await N.updates.set({ ackAfter: true }); U.phase = 'idle'; run(U.v); }
+    if (a === 'page') open(rel ? `${rel}/tag/v${U.v}` : '');
+    if (a === 'notes') open(rel ? `${rel}/tag/v${U.v}` : '');
+    if (a === 'ack') { await N.updates.set({ ackAfter: true }); U.phase = 'idle'; dlg.hidden = true; }
+  });
+  dlg.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); if (U.phase === 'after') dlg.querySelector('[data-u="ack"]').click(); else hide(); }
+    if (e.key === 'Tab') {                                // фокус не уходит из окна
+      const f = [...dlg.querySelectorAll('button')]; if (!f.length) { e.preventDefault(); return; }
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  window.FD_updateWindow = { state: () => ({ phase: U.phase, steps: STEPS.map(([k]) => row(k).dataset.s), title: $('fdupd-t').textContent, open: !dlg.hidden }) };
 
   sec.addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -128,11 +258,6 @@
     if (e.target.id === 'ab-pre') { st = await N.updates.set({ prerelease: e.target.checked }); if (st.configured) check(); }
   });
 
-  N.updates.onProgress(p => {
-    prog = p; const bar = $('ab-prog');
-    if (bar) { bar.hidden = false; bar.firstElementChild.style.width = Math.round(p.got / Math.max(1, p.total) * 100) + '%'; }
-    msg(`Скачиваю ${p.version}: ${mb(p.got)} из ${mb(p.total)}`);
-  });
   N.updates.onAvailable(u => {
     if (window.FD_toast) window.FD_toast(`Доступна новая версия ${u.version} (у вас ${u.current})`, { sticky: true, action: { label: 'Обновить', run: () => { if (window.FD_openConnections) window.FD_openConnections('about'); install(u.version); } } });
   });
@@ -145,5 +270,6 @@
     try { info = await N.app.info(); } catch (_) { /* нет данных о версии */ }
     try { st = await N.updates.status(); } catch (_) { st = {}; }
     render();
+    afterInstall(st && st.after);
   })();
 })();

@@ -6,6 +6,7 @@
  */
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs'); const os = require('os'); const path = require('path'); const http = require('http'); const crypto = require('crypto');
+process.env.FD_UPD_DRYRUN = '1';   // все шаги установки, но без запуска установщика и выхода
 const OUT = process.argv[process.argv.length - 2]; const FIX = process.argv[process.argv.length - 1];
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'fd-upd-')));
 app.commandLine.appendSwitch('no-sandbox'); app.on('window-all-closed', () => {});
@@ -93,6 +94,33 @@ app.whenReady().then(async () => {
     w.webContents.send('updates:available', { version: NEXT, current: CUR, url: '' }); await sleep(400);
     const toast = await js(`(()=>{const t=document.querySelector('.fd-toast');return t&&!t.hidden?t.textContent:''})()`);
     ok(/Доступна новая версия/.test(toast) && /Обновить/.test(toast), 'подсказка «Доступна новая версия» с кнопкой «Обновить»');
+    // окно статусов установки: шаги и перезапуск
+    await js(`document.querySelector('.fd-toast').hidden = true; window.FD_openAbout()`); await sleep(600);
+    ok(await js(`/перезапустится сама/.test(document.querySelector('#cnp .ab-restart').textContent)`), 'в блоке «Обновления» сказано, что после установки программа перезапустится');
+    await js(`document.querySelector('#cnp .ab-new [data-inst]').click()`); await sleep(300);
+    await js(`document.getElementById('cfY').click()`);
+    const seen = new Set(); let ws = null;
+    for (let i = 0; i < 60; i++) { await sleep(50); ws = await js(`window.FD_updateWindow.state()`); seen.add(ws.steps.join(',')); if (ws.phase === 'restart') break; }
+    console.log('   шаги:', [...seen].join(' → '));
+    ok(ws.open && ws.title === `Обновление до версии ${NEXT}`, 'открылось окно «Обновление до версии …»');
+    ok([...seen].some(x => x === 'done,done,run,wait') && ws.steps.join(',') === 'done,done,done,run', 'шаги по очереди: скачивание → проверка → установка → перезапуск');
+    ok(await js(`/перезапустится автоматически/.test(document.getElementById('fdupd-note').textContent) && !document.querySelector('#fdupd [data-u="hide"]')`), 'в окне — «программа перезапустится автоматически», скрыть окно во время установки нельзя');
+    await sleep(500); await shot('update-window');
+    // «после перезапуска»: версия сменилась
+    const S2 = require('../src/main/config/settings');
+    S2.patch('updates', { pending: { from: '0.0.1', to: CUR, at: new Date().toISOString(), session: 'prev' } });
+    await w.webContents.reload(); await sleep(3500);
+    ws = await js(`window.FD_updateWindow.state()`);
+    ok(ws.open && ws.title === `Обновлено до версии ${CUR}` && ws.steps.every(x => x === 'done'), 'после перезапуска — «Обновлено до версии …», все шаги выполнены');
+    await shot('update-done');
+    await js(`document.querySelector('#fdupd [data-u="ack"]').click()`); await sleep(300);
+    ok(!(await js(`window.FD_updateWindow.state().open`)) && !U.status().after, '«Готово» закрывает окно, итог больше не показывается');
+    // версия не сменилась
+    S2.patch('updates', { pending: { from: CUR, to: NEXT, at: new Date().toISOString(), session: 'prev' } });
+    await w.webContents.reload(); await sleep(3500);
+    ws = await js(`window.FD_updateWindow.state()`);
+    ok(ws.open && /не установилась/.test(ws.title) && ws.steps[2] === 'err' && await js(`!!document.querySelector('#fdupd [data-u="retry"]')`), 'если версия не сменилась — «не установилась», «Повторить» и «Скачать вручную»');
+    await shot('update-failed');
     ok(!errors.length, 'ошибок нет' + (errors.length ? ': ' + errors.join(' | ') : ''));
   } catch (e) { console.error(e); process.exitCode = 1; }
   srv.close(); app.exit(process.exitCode || 0);
