@@ -44,7 +44,8 @@ app.whenReady().then(async () => {
     if (sig) { const b = await js(`(()=>{const r=document.querySelector('#sigs .sig').getBoundingClientRect();return {x:Math.round(r.left+40),y:Math.round(r.top+r.height/2)}})()`);
       w.webContents.sendInputEvent({ type: 'mouseMove', x: b.x, y: b.y }); await sleep(250);
       const an = await js(`getComputedStyle(document.querySelector('#sigs .sig'),'::before').animationName`);
-      ok(an === 'fdblink', 'наведение на строку сигнала — точка мерцает (' + an + ')'); await shot('sig-hover'); }
+      const ic = await js(`getComputedStyle(document.querySelector('#sigs .sig'),'::before').animationIterationCount`);
+      ok(an === 'fdping' && ic === '1', 'наведение на строку сигнала — точка отзывается один раз (' + an + ', повторов ' + ic + ')'); await shot('sig-hover'); }
     else ok(false, 'нет строк сигналов');
     await js(`(()=>{const h=[...document.querySelectorAll('#sheet1 h2')].find(x=>x.textContent.startsWith('Цели'));h.scrollIntoView({block:'start'});window.scrollBy(0,-100)})()`); await sleep(300); await shot('balance-goals');
     await js(`(()=>{const h=[...document.querySelectorAll('#sheet1 h2')].find(x=>x.textContent.startsWith('Расходы'));h.scrollIntoView({block:'start'});window.scrollBy(0,-100)})()`); await sleep(300); await shot('balance-chart');
@@ -111,7 +112,15 @@ app.whenReady().then(async () => {
     const bt = await js(`(()=>{const b=document.querySelector('.bn');return getComputedStyle(b).transitionProperty})()`);
     ok(/transform/.test(bt), 'кнопки: плавный отклик на нажатие (transition: ' + bt.slice(0, 60) + ')');
     const pick = await js(`(()=>{const b=document.querySelector('#ctog [aria-pressed="true"]');return b?getComputedStyle(b).animationName:''})()`);
-    ok(pick === 'fdpick', 'выбранный вариант «щёлкает» при выборе (' + pick + ')');
+    ok(pick === 'none', 'выбранный вариант без «прыжка» — только цвет и нажатие (' + pick + ')');
+    /* аудит движения (Emil Kowalski): лист — только проявление ≤150 мс; вкладки не приподнимаются; полосы целей не растут */
+    const mv = await js(`(()=>{const sh=document.querySelector('.sheet.on'),cs=getComputedStyle(sh),tb=document.querySelector('.tabs button'),bar=document.querySelector('#sheet1 .g .bar>i')||document.querySelector('#sheet1 .bar>i');const hov=[...document.styleSheets].some(ss=>{try{return [...ss.cssRules].some(r=>/\.tabs button:hover/.test(r.selectorText||'')&&/transform:\\s*(translate|rotate|scale)/.test(r.style&&r.style.cssText||''))}catch(_){return false}});
+      return {sheet:cs.animationName+' '+cs.animationDuration,tab:hov?'приподнимаются':'нет сдвига при наведении',bar:bar?getComputedStyle(bar).transitionDuration:'0s',tok:getComputedStyle(document.documentElement).getPropertyValue('--fd-d').trim()}})()`);
+    ok(/^fdsheet 0\.14s$/.test(mv.sheet) && mv.tab === 'нет сдвига при наведении' && mv.bar === '0s' && mv.tok === '.2s', `движение по аудиту: лист «${mv.sheet}», вкладки — «${mv.tab}», полосы целей — ${mv.bar}, токен длительности ${mv.tok}`);
+    // Esc закрывает панель мгновенно
+    await js(`document.getElementById('cnb').click()`); await sleep(400);
+    w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' }); w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' }); await sleep(40);
+    ok(await js(`getComputedStyle(document.getElementById('cnp')).display === 'none'`), 'Esc закрывает «Подключения» сразу, без анимации');
     /* 9. пустую карточку ИИ можно убрать */
     await js(`document.getElementById('cnb').click()`); await sleep(400);
     await js(`document.querySelector('#cnp [data-t="ai"]').click()`); await sleep(300);

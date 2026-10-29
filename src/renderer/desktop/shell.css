@@ -3,7 +3,8 @@
    поэтому вкладки никогда не наезжают на логотип и кнопки при любом размере окна. */
 
 .top .in{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:12px}
-.top .in>.logo{min-width:0;grid-column:1}
+.top .in>.logo{min-width:38px;grid-column:1}
+.top .logo>svg{flex-shrink:0} /* на узком окне кнопки действий не сжимают логотип в точку */
 .fd-actions{grid-column:3;display:flex;align-items:center;gap:8px;margin-right:8px}
 .fd-actions .ib{flex:none}
 
@@ -37,7 +38,7 @@
 .fd-menu{position:fixed;z-index:45;min-width:220px;padding:6px;border-radius:16px;border:1px solid var(--gb);
   background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 14px 40px rgba(15,23,42,.22)}
 .fd-menu[hidden]{display:none}
-.fd-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--tx);font:600 .86rem Manrope,sans-serif;cursor:pointer;text-align:left;transition:background-color .15s}
+.fd-menu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:var(--tx);font:600 .86rem Manrope,sans-serif;cursor:pointer;text-align:left;transition:background-color var(--fd-d-fast)}
 .fd-menu button:hover,.fd-menu button:focus-visible{background:var(--s2)}
 .fd-menu svg{width:20px;height:20px;flex:none}
 
@@ -49,8 +50,7 @@
 .fd-demo-bar .bn{min-height:40px}
 
 /* переход между режимами — без «прыжков»: меняется только прозрачность подписи */
-@media (prefers-reduced-motion:no-preference){.top .tabs .tl,.top .tabs .ts{animation:fdfade .18s ease}}
-@keyframes fdfade{from{opacity:0}to{opacity:1}}
+/* подписи вкладок при смене раскладки шапки появляются сразу: это происходит при каждом изменении размера окна */
 
 /* очень узкое окно: длинные суммы в строках категорий переносятся, а не выталкивают страницу вбок */
 @media (max-width:520px){
@@ -64,9 +64,11 @@
 html{scroll-padding-top:96px}
 @media (max-width:780px){html{scroll-padding-bottom:104px}}
 /* Движение: сильный ease-out для появлений (общий токен модулей программы) */
-:root{--fd-ease-out:cubic-bezier(0.23,1,0.32,1)}
+:root{--fd-ease-out:cubic-bezier(0.23,1,0.32,1);
+  /* длительности интерфейса: нажатие и мелкие элементы / панели и подсказки / схлопывание и смена состояний */
+  --fd-d-fast:.15s;--fd-d:.2s;--fd-d-slow:.25s}
 /* Меню «⋯»: из кнопки (правый верх), 150 мс */
-.fd-menu{transform-origin:top right;transition:opacity .15s var(--fd-ease-out),transform .15s var(--fd-ease-out)}
+.fd-menu{transform-origin:top right;transition:opacity var(--fd-d-fast) var(--fd-ease-out),transform var(--fd-d-fast) var(--fd-ease-out)}
 @starting-style{.fd-menu{opacity:0;transform:scale(.97)}}
 @media (prefers-reduced-motion:reduce){@starting-style{.fd-menu{transform:none}}}
 /* Логотипы банков и магазинов вместо букв: белая подложка и тонкая обводка, чтобы значок читался в обеих темах */
@@ -83,23 +85,23 @@ html{scroll-padding-top:96px}
 
 /* ---------- Всплывающие панели: появление и скрытие (не на каждый клик — на открытие панели) ---------- */
 #asp,#cnp,#dmp{transform-origin:top right;
-  transition:opacity .2s var(--fd-ease-out),transform .2s var(--fd-ease-out),display .2s allow-discrete,overlay .2s allow-discrete}
+  transition:opacity var(--fd-d) var(--fd-ease-out),transform var(--fd-d) var(--fd-ease-out),display var(--fd-d) allow-discrete,overlay var(--fd-d) allow-discrete}
 #asp[hidden],#cnp[hidden],#dmp[hidden]{display:none;opacity:0;transform:translateY(-6px) scale(.985)}
 @starting-style{#asp,#cnp,#dmp{opacity:0;transform:translateY(-6px) scale(.985)}}
 #dmp.dmp{animation:none}
-.fd-menu{transition:opacity .15s var(--fd-ease-out),transform .15s var(--fd-ease-out),display .15s allow-discrete}
+.fd-menu{transition:opacity var(--fd-d-fast) var(--fd-ease-out),transform var(--fd-d-fast) var(--fd-ease-out),display var(--fd-d-fast) allow-discrete}
 .fd-menu[hidden]{display:none;opacity:0;transform:scale(.97)}
-.job{transition:opacity .2s var(--fd-ease-out),translate .2s var(--fd-ease-out),display .2s allow-discrete}
+.job{transition:opacity var(--fd-d) var(--fd-ease-out),translate var(--fd-d) var(--fd-ease-out),display var(--fd-d) allow-discrete}
 .job[hidden]{display:none;opacity:0;translate:0 8px}
 @starting-style{.job{opacity:0;translate:0 8px}}
-.fd-toast{transition:opacity .2s var(--fd-ease-out),transform .2s var(--fd-ease-out),left .25s var(--fd-ease-out),bottom .25s var(--fd-ease-out),display .2s allow-discrete}
+.fd-toast{transition:opacity var(--fd-d) var(--fd-ease-out),transform var(--fd-d) var(--fd-ease-out),display var(--fd-d) allow-discrete}
 .fd-toast[hidden]{display:none;opacity:0;transform:translateY(8px)}
-#tip{transition:opacity .15s var(--fd-ease-out),translate .15s var(--fd-ease-out)}
+#tip{transition:opacity var(--fd-d-fast) var(--fd-ease-out),translate var(--fd-d-fast) var(--fd-ease-out)}
 /* подсказки статуса проявляются при новом тексте */
-.fd-status-in{animation:fdstatus .24s var(--fd-ease-out)}
+.fd-status-in{animation:fdstatus var(--fd-d) var(--fd-ease-out)}
 @keyframes fdstatus{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){
-  #asp,#cnp,#dmp,.fd-menu,.job,.fd-toast{transition:opacity .15s,display .15s allow-discrete}
+  #asp,#cnp,#dmp,.fd-menu,.job,.fd-toast{transition:opacity var(--fd-d-fast),display var(--fd-d-fast) allow-discrete}
   #asp[hidden],#cnp[hidden],#dmp[hidden],.fd-menu[hidden],.fd-toast[hidden]{transform:none}.job[hidden]{translate:none}
   @starting-style{#asp,#cnp,#dmp{transform:none}.job{translate:none}}
   @keyframes fdstatus{from{opacity:0}to{opacity:1}}
@@ -130,3 +132,7 @@ body:has(.job:not([hidden])) .fd-toast{bottom:calc(env(safe-area-inset-bottom,0p
 /* «Цели и прогноз» и «Справка» — всегда одной высоты (верх и низ на одном уровне) */
 #fd-goalrow{align-items:stretch}
 #fd-goalrow>.c{align-self:stretch;margin-bottom:0}
+
+/* Панели: закрытие быстрее открытия (ответ системы мгновенный); с клавиатуры — без анимации */
+#asp[hidden],#cnp[hidden],#dmp[hidden],.fd-menu[hidden]{transition-duration:var(--fd-d-fast)}
+#asp.fd-instant,#cnp.fd-instant,#dmp.fd-instant,.fd-menu.fd-instant{transition:none!important}

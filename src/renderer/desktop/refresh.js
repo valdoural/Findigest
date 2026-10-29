@@ -36,8 +36,16 @@
     if (action) { const b = document.createElement('button'); b.className = 'bn'; b.type = 'button'; b.textContent = action.label; b.onclick = action.run; toast.appendChild(b); }
     const x = document.createElement('button'); x.className = 'nb'; x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Скрыть'); x.onclick = () => { toast.hidden = true; }; toast.appendChild(x);
     toast.hidden = false;
-    if (!sticky) tt = setTimeout(() => { toast.hidden = true; }, 7000);
+    left = sticky ? 0 : 7000;
+    if (!sticky) arm();
   }
+  // отсчёт до скрытия подсказки стоит, пока на неё навели курсор или окно свёрнуто, — её не убирают недочитанной
+  let left = 0, startedAt = 0;
+  function arm() { clearTimeout(tt); if (!left || toast.matches(':hover') || document.hidden) return; startedAt = Date.now(); tt = setTimeout(() => { toast.hidden = true; left = 0; }, left); }
+  function pause() { if (!left || !startedAt) return; clearTimeout(tt); left = Math.max(1200, left - (Date.now() - startedAt)); startedAt = 0; }
+  toast.addEventListener('pointerenter', pause); toast.addEventListener('pointerleave', arm);
+  toast.addEventListener('focusin', pause); toast.addEventListener('focusout', arm);
+  document.addEventListener('visibilitychange', () => (document.hidden ? pause() : arm()));
   window.FD_toast = say;   // для других модулей (например, «Доступна новая версия»)
 
   const fmt = iso => { if (!iso) return '—'; const d = new Date(iso); return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', ''); };
@@ -86,6 +94,8 @@
   N.digest.onState(st => { N.digest.status().then(paint).catch(() => paint(st)); });
   /* ---------- новые чеки из почты: загрузка → разбор → база → подсказка, без перезагрузки и без кнопок ---------- */
   const rub = v => Math.round(v).toLocaleString('ru-RU') + ' ₽';
+  // длинное название магазина («ИП Константинопольская Александра Владимировна (магазин у дома)») — сокращаем середину
+  const shortName = (t, max = 34) => { t = String(t || ''); return t.length <= max ? t : t.slice(0, Math.ceil(max * 0.6)).trimEnd() + '…' + t.slice(-Math.floor(max * 0.4)).trimStart(); };
   const dm = d => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d.slice(8, 10) + '.' + d.slice(5, 7) : '');
   function showReceipts(ids) {
     const t = document.querySelector('.tabs [data-s="sheet6"]'); if (t) t.click();
@@ -93,7 +103,11 @@
       const box = document.getElementById('rcaBody'); if (box && box.hidden) { const b = document.getElementById('rcaT'); if (b) b.click(); }
       const first = ids && ids[0] && document.querySelector(`#rca [data-sel="${ids[0]}"]`);
       const row = first ? first.closest('details') : document.getElementById('rca');
-      if (row) { if (row.tagName === 'DETAILS') row.open = true; row.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      if (row) {
+        if (row.tagName === 'DETAILS') row.open = true; row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        // один раз подсветить новые чеки — видно, какой именно появился (редкое событие, поэтому без экономии на движении)
+        for (const id of ids || []) { const r = document.querySelector(`#rca [data-sel="${id}"]`); const d = r && r.closest('details'); if (d) { d.classList.remove('fd-hl'); void d.offsetWidth; d.classList.add('fd-hl'); } }
+      }
     }, 250);
   }
   /** Разобрать загруженные из почты чеки (ids — только эти) и сообщить, что добавлено. Возвращает список.
@@ -119,8 +133,8 @@
     const ok = list.filter(x => x.status === 'parsed'), bad = list.filter(x => x.status === 'error'), wait = list.filter(x => x.status !== 'parsed' && x.status !== 'error');
     const sum = ok.reduce((a, x) => a + (+x.total || 0), 0);
     let text;
-    if (ok.length === 1) { const x = ok[0]; text = `Новый чек из почты: ${x.store || 'магазин'}${dm(x.date) ? ' · ' + dm(x.date) : ''}${x.total ? ' · ' + rub(x.total) : ''} — ${x.items} поз. добавлено в «Продукты»`; }
-    else if (ok.length) text = `Из почты добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store).filter(Boolean))].slice(0, 3).join(', ') || 'магазины'})${sum ? ' на ' + rub(sum) : ''} — в «Продукты»`;
+    if (ok.length === 1) { const x = ok[0]; text = `Новый чек из почты: ${shortName(x.store) || 'магазин'}${dm(x.date) ? ' · ' + dm(x.date) : ''}${x.total ? ' · ' + rub(x.total) : ''} — ${x.items} поз. добавлено в «Продукты»`; }
+    else if (ok.length) text = `Из почты добавлено чеков: ${ok.length} (${[...new Set(ok.map(x => x.store).filter(Boolean))].slice(0, 3).map(n => shortName(n, 24)).join(', ') || 'магазины'})${sum ? ' на ' + rub(sum) : ''} — в «Продукты»`;
     if (bad.length) text = (text ? text + '. ' : '') + `Не разобрано: ${bad.length} — ${bad[0].err || 'проверьте в архиве'}`;
     if (wait.length) text = (text ? text + '. ' : '') + `В архиве ждут разбора: ${wait.length}`;
     say(text + '.', { sticky: true, err: !!bad.length && !ok.length, action: { label: wait.length && !auto ? 'Разобрать' : 'Показать', run: async () => { toast.hidden = true; if (wait.length && !auto) { await window.FD_PAGE.ingestMail(wait.map(x => x.id)); } showReceipts(list.map(x => x.id)); } } });

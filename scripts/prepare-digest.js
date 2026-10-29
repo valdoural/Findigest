@@ -361,6 +361,35 @@ rep(String.raw`const skip=/итог|всего|сумма|ндс|нал|безн
 rep(String.raw`const tm=String(text).match(/итог[^\d\n]{0,20}(\d[\d ]*[.,]\d{2})/i);`,
   String.raw`const tm=String(text).match(/итог[^\d\n]{0,20}(\d[\d ]*[.,]\d{2}|\d[\d ]*(?=\s*(?:₽|руб)))/i);`);
 
+// 8.21 Движение по аудиту (Emil Kowalski, review-animations / remove-animations):
+//  • смена листа — только проявление за 140 мс (было 380 мс с подъёмом: вкладки переключают десятки раз в день);
+//  • вкладки не приподнимаются при наведении (частое наведение, на сенсорном экране «залипает»);
+//  • полосы прогресса целей не «растут» при каждой перерисовке — это данные, а не украшение;
+//  • «уменьшение движения» убирает движение, но оставляет проявление и смену цвета (раньше выключало всё);
+//  • точка выбора в архиве появляется с 60% размера и проявлением, а не из нуля.
+rep(".sheet.on{display:block;animation:sin .38s cubic-bezier(.2,.7,.2,1)}", ".sheet.on{display:block;animation:fdsheet .14s ease-out}@keyframes fdsheet{from{opacity:0}}");
+rep("transition:background-color .2s,color .2s,transform .2s}\n.tabs button:hover{transform:translateY(-1px)}", "transition:background-color .2s,color .2s}");
+rep(".tabs button{border-radius:12px 12px 4px 4px;position:relative;transition:transform .25s,background-color .2s,box-shadow .2s}.tabs button:hover{transform:translateY(-3px) rotate(-1deg)}.tabs button .ic svg{transition:transform .3s}.tabs button:hover .ic svg{transform:translateY(-2px) scale(1.12)}",
+  ".tabs button{border-radius:12px 12px 4px 4px;position:relative;transition:background-color .2s,box-shadow .2s}");
+rep(".bar>i{display:block;height:100%;border-radius:99px;background:var(--ac);transition:width .6s ease}", ".bar>i{display:block;height:100%;border-radius:99px;background:var(--ac)}");
+rep("@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}",
+  "@media (prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-property:opacity,color,background-color,border-color,box-shadow,filter!important}}");
+rep(".asel::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--on);transform:scale(0);transition:transform .15s}",
+  ".asel::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--on);transform:scale(.6);opacity:0;transition:transform .15s,opacity .15s}");
+rep(".asel[aria-checked=true]::after{transform:scale(1)}", ".asel[aria-checked=true]::after{transform:scale(1);opacity:1}");
+
+// 8.22 Крайние значения (аудит break-ui): «+21 465,5% к сравн.», «от прогноза 1547%», «2036% достигнуто» — читаются плохо.
+// Рост от +300% показывается кратностью, перевыполнение цели — словами.
+rep("const PC=v=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1).replace('.',',')+'%';",
+  "const TIMES=r=>{const n=r<10?r.toFixed(1).replace('.',',').replace(',0',''):String(Math.round(r));const k=Math.round(r);return 'в '+n+' '+(r<10&&r%1>=.05?'раза':(k%10>=2&&k%10<=4&&(k%100<12||k%100>14)?'раза':'раз'))};"+
+  "const PC=v=>v>=300?TIMES(1+v/100)+' больше':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1).replace('.',',')+'%';");
+rep("от прогноза ${Math.round(SUMM()/BUDT*100)}% за месяц", "${SUMM()/BUDT>=3?TIMES(SUMM()/BUDT)+' больше прогноза за месяц':'от прогноза '+Math.round(SUMM()/BUDT*100)+'% за месяц'}");
+rep(": ${Math.round(cur/target*100)}% достигнуто при ставке ${rt}%.", ": ${cur>=target?'цель достигнута'+(cur/target>=2?' ('+TIMES(cur/target)+' больше)':''):Math.round(cur/target*100)+'% достигнуто'} при ставке ${rt}%.");
+
+// 8.23 Цель уже достигнута по цифрам, но не отмечена — подпись у переключателя подсказывает отметить её
+rep("<i aria-hidden=\"true\"></i><span>${g.done?'выполнено':'не выполнено'}</span></label>",
+  "<i aria-hidden=\"true\"></i><span${!g.done&&pc>=100?' class=\"g-reach\"':''}>${g.done?'выполнено':(pc>=100?'достигнута — отметить':'не выполнено')}</span></label>");
+
 // 9. Доступ модулей программы (импорт таблиц и др.) к данным отчёта: основной скрипт — асинхронная функция,
 //    его переменные снаружи не видны, поэтому в её конце публикуется небольшой интерфейс window.FD_PAGE.
 {

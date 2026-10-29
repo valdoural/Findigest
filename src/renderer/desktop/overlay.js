@@ -31,6 +31,12 @@
   // меню «⋯» и панели могут появиться позже (создаются модулями) — подхватываем
   new MutationObserver(watch).observe(document.body, { childList: true });
 
+  // Esc закрывает панели мгновенно — действия с клавиатуры не анимируются (класс снимается через два кадра)
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    for (const p of nodes()) if (!p.el.hidden) { p.el.classList.add('fd-instant'); requestAnimationFrame(() => requestAnimationFrame(() => p.el.classList.remove('fd-instant'))); }
+  }, true);
+
   /* ---------- подсказки статуса: проявление при смене текста ---------- */
   const STATUS = '.cn-msg, #xm, #xm2, #xm3, .fd-ai-err, #as-st, .fd-toast span, #jobm, #pend';
   const flash = el => {

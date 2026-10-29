@@ -91,7 +91,9 @@
   const logoOk = () => !logoEl || logoEl.scrollWidth <= logoEl.clientWidth + 0.5;
   const fits = () => {
     if (!logoOk()) return false;
-    if (bottomBar.matches) return bar.scrollWidth <= bar.clientWidth + 0.5 && [...bar.querySelector('.fd-actions').children].every(b => b.getBoundingClientRect().right <= bar.getBoundingClientRect().right + 0.5);
+    // правая граница — по видимому краю шапки (без внутреннего отступа), иначе последняя кнопка «помещается», но обрезана
+    const edge = () => bar.getBoundingClientRect().right - (parseFloat(getComputedStyle(bar).paddingRight) || 0) + 0.5;
+    if (bottomBar.matches) return bar.scrollWidth <= bar.clientWidth + 0.5 && [...bar.querySelector('.fd-actions').children].every(b => !b.getClientRects().length || b.getBoundingClientRect().right <= edge());
     // вкладки помещаются целиком и сама шапка не переполнена
     const need = [...nav.children].reduce((a, b) => a + b.getBoundingClientRect().width, 0) + 4 * (nav.children.length - 1);
     return need <= nav.clientWidth + 0.5 && bar.scrollWidth <= bar.clientWidth + 0.5;

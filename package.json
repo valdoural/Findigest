@@ -1,6 +1,6 @@
 {
   "name": "fin-digest",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "Финансовый дайджест — настольное приложение",
   "main": "src/main/main.js",
   "scripts": {
@@ -25,6 +25,7 @@
     "test:v09": "xvfb-run -a -s \"-screen 0 1600x1000x24\" electron --no-sandbox test/v09-test.js /tmp/fd-v09",
     "test:speech": "node test/speech-test.js",
     "test:zen": "node test/zen-rules-test.js",
+    "test:audit": "xvfb-run -a -s \"-screen 0 1600x1000x24\" electron --no-sandbox test/audit-test.js /tmp/fd-au",
     "test:updates": "xvfb-run -a -s \"-screen 0 1600x1000x24\" electron --no-sandbox test/updates-test.js /tmp/fd-upd"
   },
   "keywords": [],

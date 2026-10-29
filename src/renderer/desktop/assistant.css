@@ -28,7 +28,7 @@
 @keyframes astyp{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 .as-chips[hidden]{display:none}
 .as-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px}
-.as-chips button{min-height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:99px;background:var(--gl);color:var(--tx);font:600 .78rem Manrope,sans-serif;cursor:pointer;transition:background-color .15s}
+.as-chips button{min-height:36px;padding:0 12px;border:1px solid var(--bd);border-radius:99px;background:var(--gl);color:var(--tx);font:600 .78rem Manrope,sans-serif;cursor:pointer;transition:background-color var(--fd-d-fast)}
 .as-chips button:hover{background:var(--s2)}
 .as-rec{display:none;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--bd);font-size:.84rem}
 .as-rec.on{display:flex}

@@ -8,14 +8,14 @@
   :root select{
     display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px 0 14px;
     border:1px solid var(--bd);border-radius:14px;background:var(--gl);color:var(--tx);font:inherit;cursor:pointer;
-    transition:border-color .15s,background-color .15s,box-shadow .15s}
+    transition:border-color var(--fd-d-fast),background-color var(--fd-d-fast),box-shadow var(--fd-d-fast)}
   :root select:hover{border-color:color-mix(in srgb,var(--ac) 45%,var(--bd))}
   :root select:open{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 18%,transparent)}
   :root select:disabled{opacity:.55;cursor:not-allowed}
   /* стрелка: тонкий шеврон, поворачивается, когда список открыт */
   :root select::picker-icon{content:"";width:10px;height:10px;margin-left:auto;flex:none;
     border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:translateY(-2px) rotate(45deg);
-    transition:transform .2s var(--fd-ease-out,ease-out)}
+    transition:transform var(--fd-d) var(--fd-ease-out,ease-out)}
   :root select:open::picker-icon{transform:translateY(2px) rotate(225deg)}
   /* раскрывающийся список: плотная «стеклянная» панель, скругление 16 px, прокрутка у длинных списков */
   :root select::picker(select){
@@ -23,7 +23,7 @@
     background:var(--panel,color-mix(in srgb,var(--bg) 96%,var(--tx) 2%));color:var(--tx);
     box-shadow:0 18px 44px -12px rgba(15,23,42,.35),0 2px 6px rgba(15,23,42,.08);
     max-height:min(62vh,440px);overflow-y:auto;overscroll-behavior:contain;
-    transition:opacity .15s var(--fd-ease-out,ease-out),transform .15s var(--fd-ease-out,ease-out),display .15s allow-discrete,overlay .15s allow-discrete;
+    transition:opacity var(--fd-d-fast) var(--fd-ease-out,ease-out),transform var(--fd-d-fast) var(--fd-ease-out,ease-out),display var(--fd-d-fast) allow-discrete,overlay var(--fd-d-fast) allow-discrete;
     transform-origin:top center}
   @starting-style{:root select:open::picker(select){opacity:0;transform:translateY(-4px) scale(.98)}}
   :root select option{display:flex;align-items:center;gap:8px;min-height:38px;padding:8px 12px;border-radius:10px;
@@ -51,14 +51,14 @@
   appearance:none;-webkit-appearance:none;flex:none;box-sizing:border-box;width:44px;height:26px;min-width:44px;min-height:26px;margin:0;padding:0;
   border-radius:99px;border:1px solid var(--bd);cursor:pointer;vertical-align:middle;
   background:var(--s2) radial-gradient(circle,var(--mu) 0 8.5px,transparent 9px) no-repeat 2px 50%/22px 22px;
-  transition:background-color .2s,border-color .2s,background-position .22s var(--fd-ease-out,ease-out)}
+  transition:background-color var(--fd-d),border-color var(--fd-d),background-position var(--fd-d) var(--fd-ease-out,ease-out)}
 :root input[type=checkbox]:not(.tg input):checked{
   background-color:var(--ac);border-color:var(--ac);
   background-image:radial-gradient(circle,var(--on,#fff) 0 8.5px,transparent 9px);background-position:18px 50%}
 :root input[type=checkbox]:not(.tg input):hover{border-color:color-mix(in srgb,var(--ac) 50%,var(--bd))}
 :root input[type=checkbox]:not(.tg input):focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 :root input[type=checkbox]:not(.tg input):disabled{opacity:.5;cursor:not-allowed}
-@media (prefers-reduced-motion:reduce){:root input[type=checkbox]:not(.tg input){transition:background-color .2s,border-color .2s}}
+@media (prefers-reduced-motion:reduce){:root input[type=checkbox]:not(.tg input){transition:background-color var(--fd-d),border-color var(--fd-d)}}
 @media (prefers-contrast:more){:root input[type=checkbox]:not(.tg input){border-color:var(--tx)}}
 
 /*
@@ -77,7 +77,7 @@
 .fd-cal{position:fixed;z-index:95;width:296px;padding:10px;border-radius:18px;border:1px solid var(--gb);
   background:var(--panel,color-mix(in srgb,var(--bg) 96%,var(--tx) 2%));color:var(--tx);
   box-shadow:0 18px 44px -12px rgba(15,23,42,.35),0 2px 6px rgba(15,23,42,.08);font:inherit;
-  transition:opacity .18s var(--fd-ease-out,ease-out),transform .18s var(--fd-ease-out,ease-out),display .18s allow-discrete}
+  transition:opacity var(--fd-d) var(--fd-ease-out,ease-out),transform var(--fd-d) var(--fd-ease-out,ease-out),display var(--fd-d) allow-discrete}
 .fd-cal[hidden]{display:none;opacity:0;transform:translateY(-4px) scale(.98)}
 @starting-style{.fd-cal{opacity:0;transform:translateY(-4px) scale(.98)}}
 .fd-cal-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
@@ -88,7 +88,7 @@
 .fd-cal-grid{display:grid;gap:2px}
 .fd-cal-grid.d{grid-template-columns:repeat(7,1fr)}
 .fd-cal-grid.m{grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0}
-.fd-cal-grid button{height:36px;border:0;border-radius:11px;background:transparent;color:var(--tx);font:inherit;font-size:.84rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .15s,color .15s,transform .14s var(--fd-ease-out,ease-out)}
+.fd-cal-grid button{height:36px;border:0;border-radius:11px;background:transparent;color:var(--tx);font:inherit;font-size:.84rem;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color var(--fd-d-fast),color var(--fd-d-fast),transform var(--fd-d-fast) var(--fd-ease-out,ease-out)}
 .fd-cal-grid.m button{height:44px}
 .fd-cal-grid button:hover{background:var(--s2)}
 .fd-cal-grid button.out{color:var(--mu);opacity:.6}
@@ -99,35 +99,31 @@
 .fd-cal-grid button:active:not(:disabled){transform:scale(.92)}
 .fd-cal-foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px}
 .fd-cal-foot .bn{min-height:38px;padding:0 12px;font-size:.8rem}
-@media (prefers-reduced-motion:reduce){.fd-cal,.fd-cal-grid button{transition:opacity .15s,display .15s allow-discrete}@starting-style{.fd-cal{transform:none}}.fd-cal-grid button:active:not(:disabled){transform:none}}
+@media (prefers-reduced-motion:reduce){.fd-cal,.fd-cal-grid button{transition:opacity var(--fd-d-fast),display var(--fd-d-fast) allow-discrete}@starting-style{.fd-cal{transform:none}}.fd-cal-grid button:active:not(:disabled){transform:none}}
 
 /* ---------- Кнопки: отклик на нажатие и выбор (погружение при нажатии, «щелчок» при выборе) ---------- */
 :root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button,#cnp [data-t]){
-  transition:transform .16s var(--fd-ease-out,ease-out),background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+  transition:transform var(--fd-d-fast) var(--fd-ease-out,ease-out),background-color var(--fd-d) ease,color var(--fd-d) ease,border-color var(--fd-d) ease,box-shadow var(--fd-d) ease}
 :root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button):active:not(:disabled){transform:scale(.96)}
-:root .row[role=button]{transition:background-color .15s ease,transform .14s var(--fd-ease-out,ease-out)}
+:root .row[role=button]{transition:background-color var(--fd-d-fast) ease,transform var(--fd-d-fast) var(--fd-ease-out,ease-out)}
 :root .row[role=button]:active{transform:scale(.99)}
 @media (hover:hover) and (pointer:fine){
   :root :is(.bn:not(.gh),.cn-tile,.cn-skin):hover:not(:disabled){box-shadow:0 6px 18px -10px color-mix(in srgb,var(--ac) 55%,transparent)}
   :root :is(.cn-tile,.cn-skin):hover{transform:translateY(-1px)}
 }
-/* выбор: элемент «щёлкает», когда становится выбранным (кнопки-переключатели, вкладки, варианты) */
-:root :is(.seg button,.rch button,.cn-skin,#cnp [data-t])[aria-pressed="true"],
-:root :is(.cn-skin)[aria-checked="true"],:root #cnp [data-t][aria-selected="true"]{animation:fdpick .3s var(--fd-ease-out,ease-out)}
-@keyframes fdpick{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+/* выбор варианта отмечается цветом и нажатием (scale .96), без отдельного «прыжка»: переключатели нажимают часто */
 :root input[type=checkbox]:not(.tg input):active:not(:disabled){transform:scale(.94)}
-:root input[type=checkbox]:not(.tg input){transition:background-color .2s,border-color .2s,background-position .22s var(--fd-ease-out,ease-out),transform .14s var(--fd-ease-out,ease-out)}
+:root input[type=checkbox]:not(.tg input){transition:background-color var(--fd-d),border-color var(--fd-d),background-position var(--fd-d) var(--fd-ease-out,ease-out),transform var(--fd-d-fast) var(--fd-ease-out,ease-out)}
 @media (prefers-reduced-motion:reduce){
   :root :is(.bn,.ib,.nb,.seg button,.rch button,.as-chips button,.cn-tile,.cn-skin,.cn-tabs button,.fd-ai-btn,.fd-menu button,.tabs button):active:not(:disabled),:root .row[role=button]:active,:root input[type=checkbox]:active{transform:none}
   :root :is(.cn-tile,.cn-skin):hover{transform:none}
-  :root :is(.seg button,.rch button,.cn-skin,#cnp [data-t]){animation:none!important}
 }
 
-/* ---------- Сигналы и выводы ИИ: точка «мерцает», когда строку рассматривают ---------- */
-.sig::before{transform-origin:center;transition:transform .2s var(--fd-ease-out,ease-out)}
-.sig:hover::before,.sig:focus-within::before{animation:fdblink 1.1s ease-in-out infinite}
-@keyframes fdblink{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.28);opacity:.55}}
-@media (prefers-reduced-motion:reduce){.sig:hover::before,.sig:focus-within::before{animation:none;transform:scale(1.15)}}
+/* ---------- Сигналы и выводы ИИ: точка отзывается один раз, когда строку начинают рассматривать ---------- */
+.sig::before{transform-origin:center;transition:transform var(--fd-d) var(--fd-ease-out,ease-out)}
+.sig:hover::before,.sig:focus-within::before{transform:scale(1.15);animation:fdping var(--fd-d-slow) var(--fd-ease-out,ease-out) 1}
+@keyframes fdping{0%{transform:scale(1)}55%{transform:scale(1.35)}100%{transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.sig:hover::before,.sig:focus-within::before{animation:none}}
 
 /* «Вы, регион и РФ»: заголовок, выбор субъекта и кнопка в одну строку */
 .fd-reg-head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;margin-bottom:10px}
@@ -152,19 +148,26 @@
 .fd-as-add{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
 .fd-as-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 10px;border-radius:14px;border:1px solid color-mix(in srgb,var(--as-c) 30%,var(--bd));
   background:color-mix(in srgb,var(--as-c) 8%,transparent);color:var(--tx);font:inherit;font-size:.86rem;cursor:pointer;
-  transition:transform .16s var(--fd-ease-out,ease-out),background-color .2s,border-color .2s}
+  transition:transform var(--fd-d-fast) var(--fd-ease-out,ease-out),background-color var(--fd-d),border-color var(--fd-d)}
 .fd-as-chip svg{color:var(--as-c)}
 .fd-as-chip:hover{background:color-mix(in srgb,var(--as-c) 16%,transparent);border-color:color-mix(in srgb,var(--as-c) 55%,var(--bd))}
 .fd-as-chip:active{transform:scale(.96)}
 .fd-as-chip:focus-visible{outline:2px solid var(--as-c);outline-offset:2px}
 .fd-as-grid{margin-top:14px}
-.fd-asset.fd-new{animation:fdcard-in .26s var(--fd-ease-out,ease-out)}
-.fd-asset.fd-gone{opacity:0;transform:scale(.96);transition:opacity .22s ease-out,transform .24s var(--fd-ease-out,ease-out);pointer-events:none}
+.fd-asset.fd-new{animation:fdcard-in var(--fd-d-slow) var(--fd-ease-out,ease-out)}
+.fd-asset.fd-gone{opacity:0;transform:scale(.96);transition:opacity var(--fd-d) ease-out,transform var(--fd-d) var(--fd-ease-out,ease-out);pointer-events:none}
 @keyframes fdcard-in{from{opacity:0;transform:translateY(-4px) scale(.985)}}
 .fd-pbrk{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 2px;font-size:.84rem;opacity:.92}
 .fd-pbrk span{display:inline-flex;align-items:center;gap:6px}
 .fd-pbrk i{width:9px;height:9px;border-radius:3px;background:var(--c);box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
-@media (prefers-reduced-motion:reduce){.fd-asset.fd-new{animation:none}.fd-asset.fd-gone,.fd-as-chip{transition:opacity .15s}.fd-as-chip:active{transform:none}}
+@media (prefers-reduced-motion:reduce){.fd-asset.fd-new{animation:none}.fd-asset.fd-gone,.fd-as-chip{transition:opacity var(--fd-d-fast)}.fd-as-chip:active{transform:none}}
 /* значки имущества: фиксированный размер (общие правила для графиков растягивают svg на ширину) */
 .fd-as-chip svg,.fd-as-ic svg{width:20px!important;height:20px!important;max-width:none;flex:none}
 .fd-as-chip span{white-space:nowrap}
+
+/* цель достигнута по цифрам, но ещё не отмечена */
+.g-reach{color:var(--pos);font-weight:600}
+
+/* новый чек из почты: строка архива один раз подсвечивается после «Показать» */
+#rca details.fd-hl{animation:fdhl 1.2s var(--fd-ease-out,ease-out) 1}
+@keyframes fdhl{0%,25%{background-color:color-mix(in srgb,var(--ac) 18%,transparent)}100%{background-color:transparent}}

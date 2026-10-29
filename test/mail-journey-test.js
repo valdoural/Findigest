@@ -90,6 +90,7 @@ app.whenReady().then(async () => {
   await shot('new-receipt-toast');
   await js(`[...document.querySelectorAll('.fd-toast button')].find(b=>b.textContent==='Показать').click()`); await sleep(900);
   ok(await js(`location.hash.includes('sheet6') || document.querySelector('.tabs [data-s="sheet6"]').getAttribute('aria-selected')==='true'`), '«Показать» открывает «Продукты» и архив чеков');
+  ok(await js(`!!document.querySelector('#rca details.fd-hl')`), 'новый чек в архиве подсвечен один раз');
   await shot('receipt-archive');
 
   /* 3. тихая фоновая проверка и отсутствие дублей */

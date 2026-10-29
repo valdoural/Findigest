@@ -77,6 +77,7 @@
     panel.querySelectorAll('.cn-sec').forEach(s => s.classList.toggle('on', s.dataset.sec === tab));
   }
 
+  const plural = (n, one, few, many) => { const a = n % 10, b = n % 100; return n + ' ' + (a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many); };
   const msg = (el, text, kind) => { if (!el) return; el.textContent = text || ''; el.className = 'cn-msg' + (kind ? ' ' + kind : ''); };
   async function act(el, fn, okText) {
     msg(el, 'Проверяю…');
@@ -160,7 +161,7 @@
       card.classList.add('cn-gone');
       let fin = false; const end = () => { if (!fin) { fin = true; done(); } };
       card.addEventListener('transitionend', e => { if (e.target === card && e.propertyName === 'height') end(); });
-      setTimeout(end, 420);
+      setTimeout(end, 320); // запас на случай, если transitionend не придёт (схлопывание — 200 мс + 50 мс задержки)
     };
     el.onclick = async e => {
       const b = e.target.closest('button'); if (!b) return;
@@ -391,7 +392,7 @@
     <div class="cn-card"><b>Где хранятся данные</b>
       <div class="cn-kv"><span>База чеков и квитанций</span><code>${esc(d.file)}</code>
         <span>Размер / схема</span><span>${d.sizeKb} КБ · версия ${d.schema}</span>
-        <span>В архиве</span><span>чеков: ${d.receipts} (${d.receiptItems} поз.), квитанций: ${d.bills} (${d.billItems} строк)</span>
+        <span>В архиве</span><span>чеков: ${d.receipts} (${d.receiptItems} поз.), квитанций: ${d.bills} (${plural(d.billItems, 'строка', 'строки', 'строк')})</span>
         <span>Ключи и пароли</span><code>${esc(sc.file)}</code>
         <span>Шифрование</span><span>${sc.encrypted ? '<span class="pos">включено (Windows)</span>' : '<span class="neg">недоступно — ключи хранятся открыто</span>'}</span></div>
       <div class="cn-row"><button class="bn gh" type="button" data-open="data">Папка базы</button><button class="bn gh" type="button" data-open="config">Папка настроек</button><button class="bn gh" type="button" data-open="archive">Оригиналы чеков</button><button class="bn gh" type="button" data-open="logs">Журнал</button></div></div>`;

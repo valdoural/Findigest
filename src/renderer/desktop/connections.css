@@ -1,7 +1,7 @@
 /* Панель «Подключения». Использует переменные темы отчёта (--bg, --gl, --tx …), поэтому
    автоматически следует светлой/тёмной теме и стилю glassmorphism. */
 #cnb{position:relative}
-.cn-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--mu);box-shadow:0 0 0 2px var(--bg);transition:background-color .2s}
+.cn-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--mu);box-shadow:0 0 0 2px var(--bg);transition:background-color var(--fd-d)}
 .cn-dot.ok{background:var(--pos)}.cn-dot.warn{background:#D69E2E}.cn-dot.err{background:var(--neg)}
 
 #cnp{position:fixed;margin:0;z-index:41;top:calc(env(safe-area-inset-top,0px) + 70px);overscroll-behavior:contain;right:max(16px,calc((100vw - 1020px)/2 + 16px));
@@ -56,7 +56,7 @@
 @media (prefers-reduced-motion:reduce){.cn-dot,.cn-tile,.cn-skin{transition:none}}
 /* Вид: карточки вариантов оформления */
 .cn-skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-.cn-skin{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:44px;padding:12px;border-radius:16px;border:1px solid var(--bd);background:var(--s2);color:var(--tx);text-align:left;cursor:pointer;font:inherit;transition:border-color .15s,background-color .15s}
+.cn-skin{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:44px;padding:12px;border-radius:16px;border:1px solid var(--bd);background:var(--s2);color:var(--tx);text-align:left;cursor:pointer;font:inherit;transition:border-color var(--fd-d-fast),background-color var(--fd-d-fast)}
 .cn-skin:hover{border-color:color-mix(in srgb,var(--ac) 45%,transparent)}
 .cn-skin[aria-checked="true"]{border:2px solid var(--ac);padding:11px;background:color-mix(in srgb,var(--ac) 8%,transparent)}
 .cn-skin b{font-size:.92rem}.cn-skin small{color:var(--mu);font-size:.76rem;line-height:1.4}
@@ -73,22 +73,21 @@
 .cn-h3{margin:18px 0 2px;font-size:.95rem}
 .cn-gh{margin:12px 0 6px;font-size:.76rem;font-weight:600;color:var(--mu)}
 .cn-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
-.cn-tile{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border:1px solid var(--bd);border-radius:14px;background:var(--gl);color:var(--tx);font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s}
+.cn-tile{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border:1px solid var(--bd);border-radius:14px;background:var(--gl);color:var(--tx);font:inherit;text-align:left;cursor:pointer;transition:border-color var(--fd-d-fast),background-color var(--fd-d-fast)}
 .cn-tile:hover{border-color:color-mix(in srgb,var(--ac) 45%,var(--bd));background:color-mix(in srgb,var(--ac) 6%,var(--gl))}
 .cn-tile span{display:flex;flex-direction:column;min-width:0}.cn-tile b{font-size:.86rem}.cn-tile small{font-size:.72rem;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cn-tile .cn-logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;font:700 .72rem Manrope,sans-serif;flex:none}
 
 /* пустая раскрытая карточка ИИ: кнопка «Убрать» и эффект удаления */
-.cn-x{flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:var(--mu);cursor:pointer;transition:background-color .15s,color .15s,transform .14s var(--fd-ease-out,ease-out)}
+.cn-x{flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:var(--mu);cursor:pointer;transition:background-color var(--fd-d-fast),color var(--fd-d-fast),transform var(--fd-d-fast) var(--fd-ease-out,ease-out)}
 .cn-x:hover{background:color-mix(in srgb,var(--rd,#d14343) 12%,transparent);color:var(--rd,#d14343)}
 .cn-x:active{transform:scale(.9)}
 .cn-x:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-#cnp .cn-card.cn-new{animation:fdcard-in .24s var(--fd-ease-out,ease-out)}
+#cnp .cn-card.cn-new{animation:fdcard-in var(--fd-d) var(--fd-ease-out,ease-out)}
 @keyframes fdcard-in{from{opacity:0;transform:translateY(-4px) scale(.985)}}
 #cnp .cn-card.cn-gone{overflow:hidden;pointer-events:none;opacity:0;transform:scale(.96) translateX(12px);height:0!important;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;border-width:0;
-  transition:opacity .2s ease-out,transform .24s var(--fd-ease-out,ease-out),height .3s var(--fd-ease-out,ease-out) .08s,padding .3s var(--fd-ease-out,ease-out) .08s,margin .3s var(--fd-ease-out,ease-out) .08s}
-.cn-tile.cn-back{animation:fdpick .34s var(--fd-ease-out,ease-out)}
-@media (prefers-reduced-motion:reduce){#cnp .cn-card.cn-new,.cn-tile.cn-back{animation:none}}
+  transition:opacity var(--fd-d) ease-out,transform var(--fd-d) var(--fd-ease-out,ease-out),height var(--fd-d) var(--fd-ease-out,ease-out) .05s,padding var(--fd-d) var(--fd-ease-out,ease-out) .05s,margin var(--fd-d) var(--fd-ease-out,ease-out) .05s}
+@media (prefers-reduced-motion:reduce){#cnp .cn-card.cn-new{animation:none}}
 
 /* «О программе» (desktop/about.js) */
 .ab-hero{display:flex;gap:14px;align-items:center}
@@ -103,7 +102,7 @@
 .ab-ok{margin:0;color:var(--pos)}
 .ab-prog{height:6px;border-radius:999px;background:var(--s2);overflow:hidden;margin:8px 0}
 .ab-prog[hidden]{display:none}
-.ab-prog i{display:block;height:100%;width:0;background:var(--ac);border-radius:inherit;transition:width .2s ease-out}
+.ab-prog i{display:block;height:100%;width:0;background:var(--ac);border-radius:inherit;transition:width var(--fd-d) ease-out}
 .ab-list{list-style:none;margin:8px 0 0;padding:0}
 .ab-list li{padding:10px 0;border-top:1px solid var(--bd);display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
 .ab-list li:first-child{border-top:0}

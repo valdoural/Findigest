@@ -49,6 +49,8 @@
   document.body.appendChild(panel);
 
   function open(on, opts = {}) {
+    // с клавиатуры (Ctrl+Shift+Пробел, Esc) — без анимации: действия с клавиатуры должны срабатывать мгновенно
+    if (opts.instant) { panel.classList.add('fd-instant'); requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.remove('fd-instant'))); }
     panel.hidden = !on; btn.setAttribute('aria-expanded', String(on));
     if (!on) { stopRec(true); return; }
     refreshInfo();
@@ -58,10 +60,10 @@
   window.FD_closeAssistant = () => open(false);
   $('as-x').onclick = () => open(false);
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !panel.hidden) { if (rec) stopRec(true); else open(false); }
-    if (e.code === 'Space' && e.ctrlKey && e.shiftKey) { e.preventDefault(); if (panel.hidden) open(true, { listen: true }); else if (rec) stopRec(); else startRec(); }
+    if (e.key === 'Escape' && !panel.hidden) { if (rec) stopRec(true); else open(false, { instant: true }); }
+    if (e.code === 'Space' && e.ctrlKey && e.shiftKey) { e.preventDefault(); if (panel.hidden) open(true, { listen: true, instant: true }); else if (rec) stopRec(); else startRec(); }
   });
-  A.onListen(() => { if (panel.hidden) open(true, { listen: true }); else if (!rec) startRec(); });
+  A.onListen(() => { if (panel.hidden) open(true, { listen: true, instant: true }); else if (!rec) startRec(); });
 
   /* ---------- сообщения ---------- */
   function md(t) { // безопасная разметка: **жирный**, списки «- », абзацы
